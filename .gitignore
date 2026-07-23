@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Excel lock files (created while the workbook is open)
+~$*.xlsx
+
+# Reference screenshots captured from a live D365 tenant.
+# Kept locally for development; not published, because they show a real
+# environment's customer list. The repo documents itself with docs/*.png,
+# which are rendered from the replica's own synthetic data.
+2026-*.jpg
+customer-pymnt-probability-list.png
+graphic-payment-reports.png
+payment-predictions-per-transaction.png
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

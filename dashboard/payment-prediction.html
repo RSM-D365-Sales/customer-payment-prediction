@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment predictions per customer | Finance and Operations</title>
+<style>
+:root{
+  --hdr:#8E2A26; --hdr-hi:#A33A34; --accent:#8E2A26; --sel:#F7E9E8; --sel-bar:#8E2A26;
+  --link:#0F6CBD; --txt:#242424; --txt2:#605E5C; --txt3:#8A8886;
+  --line:#E1DFDD; --line2:#EDEBE9; --bg:#FAF9F8; --white:#FFF;
+  --ontime:#107C10; --late:#E36C0A; --verylate:#C50F1F; --track:#E1DFDD; --dot:#C50F1F;
+  --font:"Segoe UI","Segoe UI Web (West European)",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+}
+/* --hdr / --hdr-hi / --accent / --sel / --sel-bar are set at runtime by
+   applyAppearance() from the chosen colour theme. */
+html[data-contrast="high"]{
+  --link:#0000EE; --txt:#000; --txt2:#000; --txt3:#000;
+  --line:#000; --line2:#000; --bg:#FFF; --sel:#D9D9D9;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font);font-size:13px;color:var(--txt);background:var(--bg);
+     -webkit-font-smoothing:antialiased;overflow:hidden}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+svg{display:block}
+.shell{display:flex;flex-direction:column;height:100vh}
+
+/* ---------- top command bar ---------- */
+.topbar{height:48px;flex:0 0 48px;background:var(--hdr);display:flex;align-items:center;
+        gap:4px;padding:0 8px 0 4px;color:#fff}
+.topbar .waffle{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:2px}
+.topbar .waffle:hover,.tb-ico:hover{background:rgba(255,255,255,.14)}
+.brand{font-size:15px;font-weight:600;margin-left:4px;white-space:nowrap}
+.tsearch{flex:0 1 520px;margin:0 auto;height:30px;background:rgba(255,255,255,.16);border-radius:2px;
+         display:flex;align-items:center;gap:8px;padding:0 10px;color:#fff}
+.tsearch input{background:none;border:0;outline:0;color:#fff;font:inherit;font-size:12px;width:100%}
+.tsearch input::placeholder{color:rgba(255,255,255,.85)}
+.tbright{display:flex;align-items:center;gap:2px;margin-left:auto}
+.lechip{border:1px solid rgba(255,255,255,.6);border-radius:2px;padding:3px 8px;font-size:11px;
+        font-weight:600;white-space:nowrap;margin-right:6px}
+.tb-ico{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:2px;position:relative}
+.avatar{width:30px;height:30px;border-radius:50%;background:#C4B5A6;color:#3B3A39;font-size:11px;
+        font-weight:600;display:flex;align-items:center;justify-content:center;margin-left:6px}
+
+.body{flex:1;display:flex;min-height:0}
+
+/* ---------- left icon rail ---------- */
+.rail{flex:0 0 48px;background:var(--white);border-right:1px solid var(--line);
+      display:flex;flex-direction:column;align-items:center;padding-top:6px;gap:2px}
+.rail button{width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+             border-radius:2px;color:var(--txt2)}
+.rail button:hover{background:var(--line2)}
+.rail button.on{color:var(--accent)}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--white)}
+
+/* ---------- action pane ---------- */
+.actionpane{height:44px;flex:0 0 44px;border-bottom:1px solid var(--line);display:flex;
+            align-items:center;gap:2px;padding:0 8px}
+.apbtn{height:32px;padding:0 10px;border-radius:2px;display:flex;align-items:center;gap:6px;
+       font-size:13px;white-space:nowrap}
+.apbtn:hover{background:var(--line2)}
+.apbtn.info{color:var(--txt)}
+.apsep{width:1px;height:20px;background:var(--line);margin:0 6px}
+.apright{margin-left:auto;display:flex;align-items:center;gap:2px}
+.apright button{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+                border-radius:2px;color:var(--txt2)}
+.apright button:hover{background:var(--line2)}
+.badge{position:absolute;top:2px;right:2px;background:var(--verylate);color:#fff;font-size:9px;
+       min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;
+       justify-content:center;padding:0 3px;font-weight:600}
+
+.content{flex:1;display:flex;min-height:0}
+.page{flex:1;display:flex;flex-direction:column;min-width:0;padding:10px 0 0 22px}
+
+.crumb{font-size:12px;color:var(--txt2);margin-bottom:2px}
+.vtitle{display:flex;align-items:center;gap:6px;font-size:24px;font-weight:600;margin:0 0 12px;letter-spacing:-.2px}
+.vtitle button{display:flex;align-items:center;gap:6px;color:inherit}
+
+/* ---------- filter row ---------- */
+.filters{display:flex;gap:10px;margin-bottom:10px;padding-right:22px}
+.fbox{width:220px;height:28px;border:1px solid var(--line);border-radius:2px;display:flex;
+      align-items:center;gap:6px;padding:0 8px;background:var(--white)}
+.fbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.fbox input{border:0;outline:0;font:inherit;font-size:12px;width:100%;background:none}
+.fsel{width:212px;height:28px;border:1px solid var(--line);border-radius:2px;padding:0 8px;
+      font:inherit;font-size:12px;background:var(--white);color:var(--txt)}
+.rescount{margin-left:auto;font-size:12px;color:var(--txt2);align-self:center}
+
+/* ---------- grid ---------- */
+.gridwrap{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;table-layout:fixed}
+table.transactions{min-width:1264px}
+thead th{position:sticky;top:0;z-index:2;background:var(--white);border-bottom:1px solid var(--line);
+         font-size:12px;font-weight:600;color:var(--txt);text-align:left;padding:8px 8px;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;cursor:pointer}
+thead th:hover{background:var(--line2)}
+thead th.num{text-align:right}
+th .sort{color:var(--txt2);font-size:10px;margin-left:3px}
+tbody td{padding:0 8px;height:33px;font-size:13px;border-bottom:1px solid #F5F4F3;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#F5F4F3}
+tbody tr.sel{background:var(--sel)}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--sel-bar)}
+.lnk{color:var(--link)}
+tr:hover .lnk{text-decoration:underline}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dot);
+     margin-left:6px;vertical-align:middle}
+.pcell{display:flex;align-items:center;justify-content:flex-end;gap:0}
+.empty{padding:28px 8px;color:var(--txt2);font-size:13px}
+
+/* ---------- FactBox ---------- */
+.factbox{flex:0 0 286px;border-left:1px solid var(--line);background:var(--bg);
+         overflow-y:auto;padding:10px 10px 40px}
+.fbtitle{font-size:16px;font-weight:600;padding:6px 6px 10px;display:flex;align-items:center;
+         justify-content:space-between}
+.card{background:var(--white);border:1px solid var(--line);margin-bottom:8px}
+.card>header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer}
+.card>header:hover{background:#FAF9F8}
+.card>header h3{margin:0;font-size:14px;font-weight:600}
+.card>header .chev{color:var(--txt2)}
+.card .cbody{padding:0 12px 14px}
+.card.collapsed .cbody{display:none}
+
+.balrow{display:flex;align-items:baseline;justify-content:space-between;padding:2px 0 12px}
+.balrow .lbl{font-size:12px;color:var(--txt2)}
+.balrow .val{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.balrow .cur{font-size:11px;color:var(--txt2);margin-left:5px;font-weight:400}
+
+.gauges{display:flex;justify-content:space-between;gap:4px;border-top:1px solid var(--line2);padding-top:12px}
+.gauge{flex:1;text-align:center}
+.gauge .glbl{font-size:11px;color:var(--txt2);margin-top:1px}
+
+.factors{margin-top:14px;border-top:1px solid var(--line2);padding-top:10px}
+.factors .h{font-size:12px;color:var(--txt2);margin-bottom:6px}
+.factors a{display:block;color:var(--link);font-size:12px;line-height:19px;text-decoration:none;cursor:pointer}
+.factors a:hover{text-decoration:underline}
+
+.bars{display:flex;flex-direction:column;gap:12px;padding-top:2px}
+.bar .top{display:flex;align-items:baseline;justify-content:space-between}
+.bar .bl{font-size:12px;color:var(--txt2)}
+.bar .bv{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.bar .bp{font-size:11px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.bar .track{height:5px;background:var(--track);margin-top:5px;position:relative;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;height:100%}
+.openamt{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line2);
+         margin-top:14px;padding-top:11px}
+.openamt .lbl{font-size:12px;color:var(--txt2)}
+.openamt .val{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.openamt .cur{font-size:11px;color:var(--txt2);margin-left:5px;font-weight:400}
+
+.kv{padding:9px 0 4px;border-bottom:1px solid var(--line2)}
+.kv:last-child{border-bottom:0}
+.kv .k{font-size:12px;color:var(--txt2)}
+.kv .v{font-size:13px;text-align:right;font-variant-numeric:tabular-nums;padding-top:3px;min-height:18px}
+.kv .v.warn{color:var(--verylate);font-weight:600}
+
+.selectrow{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.selectrow label{font-size:12px;color:var(--txt2)}
+.selectrow select{height:28px;border:1px solid var(--line);border-radius:2px;padding:0 6px;
+                  font:inherit;font-size:12px;background:var(--white)}
+.aged{display:flex;flex-direction:column}
+.agedrow{display:flex;align-items:center;gap:8px;padding:5px 0}
+.agedrow .k{font-size:12px;color:var(--txt2);width:82px;flex:0 0 82px}
+.agedrow .ic{width:14px;flex:0 0 14px;display:flex;justify-content:center}
+.agedrow .v{flex:1;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;
+            border-bottom:1px solid var(--line2);padding-bottom:2px}
+.agedrow.total{margin-top:6px;border-top:1px solid var(--line2);padding-top:9px}
+.agedrow.total .k{color:var(--txt);font-weight:600}
+
+.details .dname{font-size:13px;padding-bottom:4px;border-bottom:1px solid var(--line2)}
+.details .dacct{font-size:13px;color:var(--link);padding:9px 0 4px;border-bottom:1px solid var(--line2)}
+.details .daddr{font-size:12px;color:var(--txt2);white-space:pre-line;line-height:18px;padding-top:10px}
+
+/* ---------- right strip ---------- */
+.rstrip{flex:0 0 44px;background:var(--white);border-left:1px solid var(--line);
+        display:flex;flex-direction:column;align-items:center;padding-top:8px;gap:4px}
+.rstrip button{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+               border-radius:2px;color:var(--txt2)}
+.rstrip button:hover{background:var(--line2)}
+.rstrip button.on{color:var(--accent);box-shadow:inset -2px 0 0 var(--accent)}
+
+/* ---------- element size (User options > Visual > Size) ---------- */
+html[data-size="compact"] tbody td{height:26px;font-size:12px}
+html[data-size="compact"] thead th{padding:5px 8px;font-size:11px}
+html[data-size="compact"] .kv{padding:6px 0 3px}
+html[data-size="compact"] .agedrow{padding:3px 0}
+html[data-size="compact"] .card .cbody{padding:0 12px 10px}
+html[data-size="compact"] .card>header{padding:8px 12px}
+
+/* ---------- User options page ---------- */
+.optpage{flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto;padding:10px 0 40px 22px}
+.optpage h1{font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-.2px}
+.optlayout{display:flex;gap:22px;padding-right:22px;align-items:flex-start}
+.optnav{flex:0 0 288px;min-height:430px;background:#F5F4F3;border:1px solid var(--line);padding:4px 0}
+.optnav button{display:block;width:100%;text-align:left;padding:11px 18px;font-size:13px;color:var(--txt)}
+.optnav button:hover{background:#EDEBE9}
+.optnav button.on{background:var(--white);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.optbody{flex:1;min-width:0;padding-top:2px}
+.optbody h2{font-size:15px;font-weight:600;margin:0 0 22px}
+.optlabel{font-size:12px;color:var(--txt2);margin-bottom:8px}
+
+.swatches{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:30px}
+.swatch{width:74px;height:74px;border:1px solid rgba(0,0,0,.12);position:relative;padding:0}
+.swatch.on{outline:2px solid var(--accent);outline-offset:3px}
+.swatch.on::after{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 17px 17px 0;
+                  border-color:transparent rgba(255,255,255,.6) transparent transparent}
+.swatch.hc{background:linear-gradient(to bottom right,#fff 0 49.5%,#000 50.5% 100%)}
+
+.sizetiles{display:flex;gap:22px;margin-bottom:8px}
+.sizetile{width:236px;height:150px;border:1px solid #C8C6C4;background:#fff;padding:0;
+          display:flex;flex-direction:column;position:relative}
+.sizetile.on{outline:2px solid var(--accent);outline-offset:3px}
+.sizetile.on::after{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 17px 17px 0;
+                    border-color:transparent rgba(255,255,255,.75) transparent transparent}
+.sthdr{flex:0 0 17px;background:#3B3A39}
+.stgrid{flex:1;display:grid;gap:2px;padding:3px;background:#3B3A39}
+.stgrid i{background:linear-gradient(#F3F2F1,#D2D0CE)}
+
+.optfields{display:flex;flex-direction:column;gap:16px;max-width:430px}
+.optfield label{display:block;font-size:12px;color:var(--txt2);margin-bottom:4px}
+.optfield input{width:100%;height:30px;border:1px solid var(--line);border-radius:2px;
+                padding:0 9px;font:inherit;font-size:13px;background:var(--white);color:var(--txt)}
+.optfield input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.optfield input:disabled{background:#F3F2F1;color:var(--txt2)}
+.optfield .hint{font-size:11px;color:var(--txt3);margin-top:4px}
+.optcheck{display:flex;align-items:center;gap:9px;font-size:13px;padding:3px 0}
+.optcheck input{width:15px;height:15px;accent-color:var(--accent)}
+.optnote{max-width:560px;margin-top:26px;padding-top:14px;border-top:1px solid var(--line2);
+         font-size:11px;color:var(--txt3);line-height:17px}
+
+.msgbar{display:flex;align-items:center;gap:9px;background:#DFF6DD;border:1px solid #A7D8A2;
+        padding:8px 12px;font-size:12px;margin-bottom:16px;max-width:640px}
+html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>const DEMO = {"config":{"demoName":"South Bend International Airport","legalEntity":"SBN","organization":"St. Joseph County Airport Authority","userName":"Demo User","userInitials":"","userEmail":"demo.user@contoso.com","currency":"USD","asOfDate":"2026-07-23","agingDefinition":"30_60_90_180","redDotThreshold":60,"theme":"red","size":"comfortable"},"customers":[{"account":"AIR-1001","name":"Allegiant Air, LLC","group":"Airlines - Signatory","terms":"Net 30","currency":"USD","city":"Las Vegas, NV","address":"1201 N Town Center Drive\nLas Vegas, NV 89144\nUSA","balance":51059.19,"onTime":84,"late":16,"veryLate":0,"onTimeAmt":42826.91,"lateAmt":8232.28,"veryLateAmt":0.0,"openInvoices":4,"lateInvoices":2,"collectionCases":0,"openActivities":0,"lastPaymentAmount":11122.93,"lastPaymentDate":"2026-06-15","avgInvoiceBalance":12764.8,"avgAmountLate":14567.7,"avgDaysToPay":37,"creditLimit":135000,"creditUsedPct":38,"aged":{"Current":21923.78,"30 days":29135.41,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Number of open invoices"]},{"account":"AIR-1002","name":"Delta Air Lines, Inc.","group":"Airlines - Signatory","terms":"Net 30","currency":"USD","city":"Atlanta, GA","address":"1030 Delta Boulevard\nAtlanta, GA 30354\nUSA","balance":46619.5,"onTime":90,"late":10,"veryLate":0,"onTimeAmt":42103.13,"lateAmt":4516.37,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":18250.31,"lastPaymentDate":"2026-06-23","avgInvoiceBalance":15539.83,"avgAmountLate":0.0,"avgDaysToPay":32,"creditLimit":90000,"creditUsedPct":52,"aged":{"Current":46619.5,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"AIR-1003","name":"United Airlines, Inc.","group":"Airlines - Signatory","terms":"Net 30","currency":"USD","city":"Chicago, IL","address":"233 S Wacker Drive\nChicago, IL 60606\nUSA","balance":41597.49,"onTime":90,"late":10,"veryLate":0,"onTimeAmt":37292.38,"lateAmt":4305.11,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":20028.38,"lastPaymentDate":"2026-06-25","avgInvoiceBalance":13865.83,"avgAmountLate":0.0,"avgDaysToPay":32,"creditLimit":110000,"creditUsedPct":38,"aged":{"Current":41597.49,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"AIR-1004","name":"American Airlines, Inc.","group":"Airlines - Signatory","terms":"Net 30","currency":"USD","city":"Fort Worth, TX","address":"1 Skyview Drive\nFort Worth, TX 76155\nUSA","balance":48978.44,"onTime":85,"late":15,"veryLate":0,"onTimeAmt":41747.91,"lateAmt":7230.53,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":26457.45,"lastPaymentDate":"2026-06-18","avgInvoiceBalance":16326.15,"avgAmountLate":17778.02,"avgDaysToPay":33,"creditLimit":125000,"creditUsedPct":39,"aged":{"Current":31200.42,"30 days":17778.02,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"AIR-1005","name":"SkyWest Airlines, Inc.","group":"Airlines - Regional","terms":"Net 30","currency":"USD","city":"St. George, UT","address":"444 South River Road\nSt. George, UT 84790\nUSA","balance":23562.1,"onTime":82,"late":18,"veryLate":0,"onTimeAmt":19313.9,"lateAmt":4248.2,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":4912.32,"lastPaymentDate":"2026-06-07","avgInvoiceBalance":7854.03,"avgAmountLate":7271.5,"avgDaysToPay":34,"creditLimit":65000,"creditUsedPct":36,"aged":{"Current":16290.6,"30 days":7271.5,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"AIR-1006","name":"Republic Airways Inc.","group":"Airlines - Regional","terms":"Net 30","currency":"USD","city":"Indianapolis, IN","address":"8909 Purdue Road, Suite 300\nIndianapolis, IN 46268\nUSA","balance":28914.71,"onTime":33,"late":59,"veryLate":8,"onTimeAmt":9572.06,"lateAmt":17144.12,"veryLateAmt":2198.53,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":0,"lastPaymentAmount":8014.32,"lastPaymentDate":"2026-06-06","avgInvoiceBalance":9638.24,"avgAmountLate":9638.24,"avgDaysToPay":65,"creditLimit":60000,"creditUsedPct":48,"aged":{"Current":0.0,"30 days":6756.76,"60 days":18349.3,"90 days":3808.65,"180 and over":0.0},"factors":["Average days to pay","Customer group","Amount"]},{"account":"AIR-1007","name":"Air Wisconsin Airlines LLC","group":"Airlines - Regional","terms":"Net 30","currency":"USD","city":"Appleton, WI","address":"W6390 Challenger Drive, Suite 203\nAppleton, WI 54914\nUSA","balance":24871.05,"onTime":40,"late":54,"veryLate":6,"onTimeAmt":9857.68,"lateAmt":13449.28,"veryLateAmt":1564.09,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":0,"lastPaymentAmount":11911.9,"lastPaymentDate":"2026-06-01","avgInvoiceBalance":8290.35,"avgAmountLate":8290.35,"avgDaysToPay":64,"creditLimit":60000,"creditUsedPct":41,"aged":{"Current":0.0,"30 days":8367.9,"60 days":13127.25,"90 days":3375.9,"180 and over":0.0},"factors":["Average days to pay","Customer group","Amount"]},{"account":"CGO-1201","name":"FedEx Corporate Services, Inc.","group":"Cargo & Freight","terms":"Net 30","currency":"USD","city":"Memphis, TN","address":"3620 Hacks Cross Road\nMemphis, TN 38125\nUSA","balance":28509.49,"onTime":88,"late":12,"veryLate":0,"onTimeAmt":25208.85,"lateAmt":3300.64,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":5371.09,"lastPaymentDate":"2026-07-01","avgInvoiceBalance":9503.16,"avgAmountLate":0.0,"avgDaysToPay":32,"creditLimit":65000,"creditUsedPct":44,"aged":{"Current":28509.49,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"CGO-1202","name":"United Parcel Service Co.","group":"Cargo & Freight","terms":"Net 30","currency":"USD","city":"Atlanta, GA","address":"55 Glenlake Parkway NE\nAtlanta, GA 30328\nUSA","balance":38634.8,"onTime":87,"late":13,"veryLate":0,"onTimeAmt":33739.58,"lateAmt":4895.22,"veryLateAmt":0.0,"openInvoices":2,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":20817.13,"lastPaymentDate":"2026-06-22","avgInvoiceBalance":19317.4,"avgAmountLate":0.0,"avgDaysToPay":32,"creditLimit":65000,"creditUsedPct":59,"aged":{"Current":38634.8,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Credit limit utilization"]},{"account":"CGO-1203","name":"Mountain Air Cargo, Inc.","group":"Cargo & Freight","terms":"Net 30","currency":"USD","city":"Kannapolis, NC","address":"3524 Airport Road\nKannapolis, NC 28081\nUSA","balance":34027.36,"onTime":76,"late":24,"veryLate":0,"onTimeAmt":25828.57,"lateAmt":8198.79,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":1,"lastPaymentAmount":8284.9,"lastPaymentDate":"2026-05-28","avgInvoiceBalance":11342.45,"avgAmountLate":12884.48,"avgDaysToPay":37,"creditLimit":80000,"creditUsedPct":43,"aged":{"Current":21142.88,"30 days":12884.48,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"CON-3001","name":"SSP America, Inc.","group":"Terminal Concessions","terms":"Net 30","currency":"USD","city":"Ashburn, VA","address":"20408 Bashan Drive, Suite 300\nAshburn, VA 20147\nUSA","balance":34820.27,"onTime":72,"late":28,"veryLate":0,"onTimeAmt":25174.11,"lateAmt":9646.16,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":1,"lastPaymentAmount":12934.78,"lastPaymentDate":"2026-06-05","avgInvoiceBalance":11606.76,"avgAmountLate":14121.32,"avgDaysToPay":37,"creditLimit":90000,"creditUsedPct":39,"aged":{"Current":20698.95,"30 days":14121.32,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"CON-3002","name":"Paradies Lagardere","group":"Terminal Concessions","terms":"Net 30","currency":"USD","city":"Atlanta, GA","address":"2849 Paces Ferry Road SE, Suite 400\nAtlanta, GA 30339\nUSA","balance":16454.79,"onTime":74,"late":26,"veryLate":0,"onTimeAmt":12153.78,"lateAmt":4301.01,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":6578.22,"lastPaymentDate":"2026-06-03","avgInvoiceBalance":5484.93,"avgAmountLate":4432.1,"avgDaysToPay":37,"creditLimit":25000,"creditUsedPct":66,"aged":{"Current":12022.69,"30 days":4432.1,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Credit limit utilization","Payment terms"]},{"account":"CON-3003","name":"Clear Channel Airports","group":"Advertising","terms":"Net 45","currency":"USD","city":"Allentown, PA","address":"5850 Hamilton Boulevard\nAllentown, PA 18106\nUSA","balance":11693.1,"onTime":44,"late":54,"veryLate":2,"onTimeAmt":5127.69,"lateAmt":6300.57,"veryLateAmt":264.84,"openInvoices":2,"lateInvoices":2,"collectionCases":0,"openActivities":0,"lastPaymentAmount":6478.45,"lastPaymentDate":"2026-05-29","avgInvoiceBalance":5846.55,"avgAmountLate":5846.55,"avgDaysToPay":72,"creditLimit":35000,"creditUsedPct":33,"aged":{"Current":0.0,"30 days":7909.64,"60 days":3783.46,"90 days":0.0,"180 and over":0.0},"factors":["Average days to pay","Customer group","Payment terms"]},{"account":"CON-3004","name":"Michiana Coffee Roasters LLC","group":"Terminal Concessions","terms":"Net 30","currency":"USD","city":"South Bend, IN","address":"812 Lincoln Way West\nSouth Bend, IN 46616\nUSA","balance":21200.33,"onTime":26,"late":67,"veryLate":7,"onTimeAmt":5467.51,"lateAmt":14285.9,"veryLateAmt":1446.92,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":2,"lastPaymentAmount":4416.78,"lastPaymentDate":"2026-04-24","avgInvoiceBalance":7066.78,"avgAmountLate":7066.78,"avgDaysToPay":70,"creditLimit":50000,"creditUsedPct":42,"aged":{"Current":0.0,"30 days":13860.0,"60 days":4195.42,"90 days":3144.91,"180 and over":0.0},"factors":["Average days to pay","Customer group","Amount"]},{"account":"CON-3005","name":"Bendix Newsstand & Gifts LLC","group":"Terminal Concessions","terms":"Net 30","currency":"USD","city":"South Bend, IN","address":"4477 Progress Drive, Suite B\nSouth Bend, IN 46628\nUSA","balance":44792.13,"onTime":3,"late":59,"veryLate":38,"onTimeAmt":1130.5,"lateAmt":26611.72,"veryLateAmt":17049.91,"openInvoices":4,"lateInvoices":4,"collectionCases":1,"openActivities":0,"lastPaymentAmount":8121.32,"lastPaymentDate":"2026-04-10","avgInvoiceBalance":11198.03,"avgAmountLate":11063.88,"avgDaysToPay":134,"creditLimit":75000,"creditUsedPct":60,"aged":{"Current":0.0,"30 days":0.0,"60 days":11376.3,"90 days":8749.06,"180 and over":24666.77},"factors":["Average days to pay","Open collection cases","Customer group"]},{"account":"EDU-6101","name":"University of Notre Dame","group":"Education & Charter","terms":"Net 30","currency":"USD","city":"Notre Dame, IN","address":"724 Grace Hall\nNotre Dame, IN 46556\nUSA","balance":21779.66,"onTime":85,"late":15,"veryLate":0,"onTimeAmt":18503.5,"lateAmt":3276.16,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":5070.1,"lastPaymentDate":"2026-06-27","avgInvoiceBalance":7259.89,"avgAmountLate":0.0,"avgDaysToPay":32,"creditLimit":55000,"creditUsedPct":40,"aged":{"Current":21779.66,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"EDU-6102","name":"Ivy Tech Community College","group":"Education & Charter","terms":"Net 30","currency":"USD","city":"South Bend, IN","address":"220 Dean Johnson Boulevard\nSouth Bend, IN 46601\nUSA","balance":14492.42,"onTime":83,"late":17,"veryLate":0,"onTimeAmt":12028.71,"lateAmt":2463.71,"veryLateAmt":0.0,"openInvoices":2,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":9291.24,"lastPaymentDate":"2026-06-06","avgInvoiceBalance":7246.21,"avgAmountLate":5634.31,"avgDaysToPay":36,"creditLimit":30000,"creditUsedPct":48,"aged":{"Current":8858.11,"30 days":5634.31,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Payment terms"]},{"account":"FBO-4001","name":"Atlantic Aviation SBN, LLC","group":"FBO & Fuel","terms":"Net 15","currency":"USD","city":"South Bend, IN","address":"1741 Lawrence D Bell Drive\nSouth Bend, IN 46628\nUSA","balance":43598.63,"onTime":76,"late":24,"veryLate":0,"onTimeAmt":33116.52,"lateAmt":10482.11,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":23741.26,"lastPaymentDate":"2026-06-18","avgInvoiceBalance":14532.88,"avgAmountLate":9897.91,"avgDaysToPay":19,"creditLimit":100000,"creditUsedPct":44,"aged":{"Current":33700.72,"30 days":9897.91,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Number of open invoices"]},{"account":"FBO-4002","name":"Corporate Wings, LLC","group":"FBO & Fuel","terms":"Net 15","currency":"USD","city":"South Bend, IN","address":"4599 Progress Drive\nSouth Bend, IN 46628\nUSA","balance":28743.0,"onTime":80,"late":20,"veryLate":0,"onTimeAmt":22893.36,"lateAmt":5849.64,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":7548.5,"lastPaymentDate":"2026-06-03","avgInvoiceBalance":9581.0,"avgAmountLate":4368.48,"avgDaysToPay":20,"creditLimit":45000,"creditUsedPct":64,"aged":{"Current":24374.52,"30 days":4368.48,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Customer group","Amount","Credit limit utilization"]},{"account":"FBO-4003","name":"Avfuel Corporation","group":"FBO & Fuel","terms":"Net 15","currency":"USD","city":"Ann Arbor, MI","address":"47 W Ellsworth Road\nAnn Arbor, MI 48108\nUSA","balance":41682.32,"onTime":82,"late":18,"veryLate":0,"onTimeAmt":34133.75,"lateAmt":7548.57,"veryLateAmt":0.0,"openInvoices":2,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":12047.75,"lastPaymentDate":"2026-06-14","avgInvoiceBalance":20841.16,"avgAmountLate":0.0,"avgDaysToPay":18,"creditLimit":85000,"creditUsedPct":49,"aged":{"Current":41682.32,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Credit limit utilization"]},{"account":"GOV-6001","name":"Transportation Security Administration","group":"Government","terms":"Net 45","currency":"USD","city":"Springfield, VA","address":"6595 Springfield Center Drive\nSpringfield, VA 20598\nUSA","balance":249145.92,"onTime":62,"late":38,"veryLate":0,"onTimeAmt":155498.87,"lateAmt":93647.05,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":149777.15,"lastPaymentDate":"2026-06-25","avgInvoiceBalance":83048.64,"avgAmountLate":172330.76,"avgDaysToPay":49,"creditLimit":590000,"creditUsedPct":42,"aged":{"Current":76815.16,"30 days":172330.76,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"GOV-6002","name":"Indiana Department of Transportation","group":"Government","terms":"Net 45","currency":"USD","city":"Indianapolis, IN","address":"100 N Senate Avenue, Room N755\nIndianapolis, IN 46204\nUSA","balance":444324.63,"onTime":25,"late":68,"veryLate":7,"onTimeAmt":109022.23,"lateAmt":303963.84,"veryLateAmt":31338.56,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":0,"lastPaymentAmount":222271.36,"lastPaymentDate":"2026-06-21","avgInvoiceBalance":148108.21,"avgAmountLate":148108.21,"avgDaysToPay":78,"creditLimit":1180000,"creditUsedPct":38,"aged":{"Current":0.0,"30 days":14779.08,"60 days":363803.69,"90 days":65741.86,"180 and over":0.0},"factors":["Amount","Average days to pay","Customer group"]},{"account":"GOV-6003","name":"St. Joseph County, Indiana","group":"Government","terms":"Net 45","currency":"USD","city":"South Bend, IN","address":"227 W Jefferson Boulevard\nSouth Bend, IN 46601\nUSA","balance":242274.34,"onTime":69,"late":31,"veryLate":0,"onTimeAmt":167166.33,"lateAmt":75108.01,"veryLateAmt":0.0,"openInvoices":2,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":74133.82,"lastPaymentDate":"2026-06-23","avgInvoiceBalance":121137.17,"avgAmountLate":230751.57,"avgDaysToPay":49,"creditLimit":395000,"creditUsedPct":61,"aged":{"Current":11522.77,"30 days":230751.57,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"GOV-6004","name":"City of South Bend","group":"Government","terms":"Net 45","currency":"USD","city":"South Bend, IN","address":"227 W Jefferson Boulevard, Suite 1200\nSouth Bend, IN 46601\nUSA","balance":328257.87,"onTime":65,"late":35,"veryLate":0,"onTimeAmt":214303.46,"lateAmt":113954.41,"veryLateAmt":0.0,"openInvoices":2,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":170679.76,"lastPaymentDate":"2026-06-09","avgInvoiceBalance":164128.93,"avgAmountLate":309916.91,"avgDaysToPay":50,"creditLimit":825000,"creditUsedPct":40,"aged":{"Current":18340.96,"30 days":309916.91,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"MRO-4101","name":"Hoosier Aviation Maintenance, Inc.","group":"MRO & Hangar","terms":"Net 30","currency":"USD","city":"South Bend, IN","address":"4321 Aeropark Court\nSouth Bend, IN 46628\nUSA","balance":39255.67,"onTime":2,"late":59,"veryLate":39,"onTimeAmt":845.15,"lateAmt":23111.97,"veryLateAmt":15298.55,"openInvoices":4,"lateInvoices":4,"collectionCases":1,"openActivities":4,"lastPaymentAmount":15125.66,"lastPaymentDate":"2026-04-18","avgInvoiceBalance":9813.92,"avgAmountLate":9551.93,"avgDaysToPay":132,"creditLimit":110000,"creditUsedPct":36,"aged":{"Current":0.0,"30 days":0.0,"60 days":7543.25,"90 days":7944.6,"180 and over":23767.82},"factors":["Average days to pay","Open collection cases","Customer group"]},{"account":"RAC-2001","name":"Avis Budget Car Rental, LLC","group":"Rental Car Concession","terms":"Net 30","currency":"USD","city":"Parsippany, NJ","address":"6 Sylvan Way\nParsippany, NJ 07054\nUSA","balance":138902.64,"onTime":78,"late":22,"veryLate":0,"onTimeAmt":108695.74,"lateAmt":30206.9,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":81015.91,"lastPaymentDate":"2026-06-21","avgInvoiceBalance":46300.88,"avgAmountLate":23603.9,"avgDaysToPay":34,"creditLimit":380000,"creditUsedPct":37,"aged":{"Current":115298.74,"30 days":23603.9,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"RAC-2002","name":"The Hertz Corporation","group":"Rental Car Concession","terms":"Net 30","currency":"USD","city":"Estero, FL","address":"8501 Williams Road\nEstero, FL 33928\nUSA","balance":200754.33,"onTime":33,"late":63,"veryLate":4,"onTimeAmt":65940.7,"lateAmt":126544.31,"veryLateAmt":8269.32,"openInvoices":4,"lateInvoices":4,"collectionCases":0,"openActivities":0,"lastPaymentAmount":69914.51,"lastPaymentDate":"2026-05-30","avgInvoiceBalance":50188.58,"avgAmountLate":50188.58,"avgDaysToPay":63,"creditLimit":445000,"creditUsedPct":45,"aged":{"Current":0.0,"30 days":177302.01,"60 days":10754.04,"90 days":12698.28,"180 and over":0.0},"factors":["Average days to pay","Amount","Customer group"]},{"account":"RAC-2003","name":"Enterprise Leasing Company of Indianapolis, LLC","group":"Rental Car Concession","terms":"Net 30","currency":"USD","city":"Indianapolis, IN","address":"8425 Zionsville Road\nIndianapolis, IN 46268\nUSA","balance":139212.81,"onTime":79,"late":21,"veryLate":0,"onTimeAmt":110217.26,"lateAmt":28995.55,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":0,"collectionCases":0,"openActivities":0,"lastPaymentAmount":46151.16,"lastPaymentDate":"2026-06-15","avgInvoiceBalance":46404.27,"avgAmountLate":0.0,"avgDaysToPay":33,"creditLimit":300000,"creditUsedPct":46,"aged":{"Current":139212.81,"30 days":0.0,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"RAC-2004","name":"Sixt Rent A Car, LLC","group":"Rental Car Concession","terms":"Net 30","currency":"USD","city":"Fort Lauderdale, FL","address":"1501 Broken Sound Parkway NW\nFort Lauderdale, FL 33487\nUSA","balance":114627.76,"onTime":36,"late":57,"veryLate":7,"onTimeAmt":41175.19,"lateAmt":65478.99,"veryLateAmt":7973.58,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":1,"lastPaymentAmount":53314.35,"lastPaymentDate":"2026-05-22","avgInvoiceBalance":38209.25,"avgAmountLate":38209.25,"avgDaysToPay":66,"creditLimit":190000,"creditUsedPct":60,"aged":{"Current":0.0,"30 days":75427.62,"60 days":12324.76,"90 days":26875.38,"180 and over":0.0},"factors":["Average days to pay","Amount","Customer group"]},{"account":"SVC-4501","name":"Unifi Aviation, LLC","group":"Ground Handling","terms":"Net 30","currency":"USD","city":"Atlanta, GA","address":"1000 Hartsfield Centre Parkway, Suite 400\nAtlanta, GA 30354\nUSA","balance":11588.7,"onTime":39,"late":52,"veryLate":9,"onTimeAmt":4474.29,"lateAmt":6044.25,"veryLateAmt":1070.15,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":1,"lastPaymentAmount":5074.44,"lastPaymentDate":"2026-05-31","avgInvoiceBalance":3862.9,"avgAmountLate":3862.9,"avgDaysToPay":66,"creditLimit":20000,"creditUsedPct":58,"aged":{"Current":0.0,"30 days":4994.35,"60 days":2247.57,"90 days":4346.78,"180 and over":0.0},"factors":["Average days to pay","Customer group","Credit limit utilization"]},{"account":"SVC-4502","name":"SP Plus Corporation","group":"Parking & Shuttle","terms":"Net 30","currency":"USD","city":"Chicago, IL","address":"200 E Randolph Street, Suite 7700\nChicago, IL 60601\nUSA","balance":184943.3,"onTime":80,"late":20,"veryLate":0,"onTimeAmt":147449.54,"lateAmt":37493.76,"veryLateAmt":0.0,"openInvoices":3,"lateInvoices":1,"collectionCases":0,"openActivities":0,"lastPaymentAmount":93500.06,"lastPaymentDate":"2026-06-06","avgInvoiceBalance":61647.77,"avgAmountLate":17298.41,"avgDaysToPay":35,"creditLimit":550000,"creditUsedPct":34,"aged":{"Current":167644.89,"30 days":17298.41,"60 days":0.0,"90 days":0.0,"180 and over":0.0},"factors":["Amount","Customer group","Payment terms"]},{"account":"SVC-4503","name":"Great Lakes Ground Support LLC","group":"Ground Handling","terms":"Net 30","currency":"USD","city":"Mishawaka, IN","address":"2915 N Home Street\nMishawaka, IN 46545\nUSA","balance":14441.09,"onTime":2,"late":59,"veryLate":39,"onTimeAmt":348.46,"lateAmt":8418.1,"veryLateAmt":5674.54,"openInvoices":4,"lateInvoices":4,"collectionCases":1,"openActivities":3,"lastPaymentAmount":9380.71,"lastPaymentDate":"2026-04-02","avgInvoiceBalance":3610.27,"avgAmountLate":3574.82,"avgDaysToPay":137,"creditLimit":45000,"creditUsedPct":32,"aged":{"Current":0.0,"30 days":0.0,"60 days":3443.93,"90 days":3185.02,"180 and over":7812.14},"factors":["Average days to pay","Open collection cases","Customer group"]},{"account":"TEN-5001","name":"Bendix Hangar Partners LLC","group":"Hangar & Land Lease","terms":"Net 30","currency":"USD","city":"South Bend, IN","address":"4150 Bendix Drive\nSouth Bend, IN 46628\nUSA","balance":14413.11,"onTime":20,"late":68,"veryLate":12,"onTimeAmt":2832.32,"lateAmt":9811.56,"veryLateAmt":1769.23,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":3,"lastPaymentAmount":8200.6,"lastPaymentDate":"2026-04-28","avgInvoiceBalance":4804.37,"avgAmountLate":4804.37,"avgDaysToPay":70,"creditLimit":35000,"creditUsedPct":41,"aged":{"Current":0.0,"30 days":1607.53,"60 days":10778.89,"90 days":2026.69,"180 and over":0.0},"factors":["Average days to pay","Customer group","Payment terms"]},{"account":"TEN-5002","name":"Kankakee Valley Flyers, Inc.","group":"Hangar & Land Lease","terms":"Net 30","currency":"USD","city":"Walkerton, IN","address":"9820 W Tyler Road\nWalkerton, IN 46574\nUSA","balance":7694.66,"onTime":3,"late":58,"veryLate":39,"onTimeAmt":237.52,"lateAmt":4437.99,"veryLateAmt":3019.15,"openInvoices":4,"lateInvoices":4,"collectionCases":1,"openActivities":2,"lastPaymentAmount":2497.01,"lastPaymentDate":"2026-03-27","avgInvoiceBalance":1923.66,"avgAmountLate":1912.01,"avgDaysToPay":135,"creditLimit":15000,"creditUsedPct":51,"aged":{"Current":0.0,"30 days":0.0,"60 days":1104.66,"90 days":3905.83,"180 and over":2684.17},"factors":["Average days to pay","Open collection cases","Customer group"]},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","group":"Hangar & Land Lease","terms":"Net 30","currency":"USD","city":"Granger, IN","address":"13075 Adams Road\nGranger, IN 46530\nUSA","balance":9215.46,"onTime":2,"late":55,"veryLate":43,"onTimeAmt":184.4,"lateAmt":5044.14,"veryLateAmt":3986.91,"openInvoices":5,"lateInvoices":5,"collectionCases":1,"openActivities":4,"lastPaymentAmount":5836.56,"lastPaymentDate":"2026-03-11","avgInvoiceBalance":1843.09,"avgAmountLate":1836.16,"avgDaysToPay":142,"creditLimit":15000,"creditUsedPct":61,"aged":{"Current":0.0,"30 days":0.0,"60 days":451.95,"90 days":5609.43,"180 and over":3154.08},"factors":["Average days to pay","Open collection cases","Number of open invoices"]},{"account":"TEN-5004","name":"Portage Prairie Logistics LLC","group":"Hangar & Land Lease","terms":"Net 30","currency":"USD","city":"New Carlisle, IN","address":"31500 Larrison Trail\nNew Carlisle, IN 46552\nUSA","balance":10789.41,"onTime":15,"late":72,"veryLate":13,"onTimeAmt":1617.89,"lateAmt":7762.19,"veryLateAmt":1409.33,"openInvoices":3,"lateInvoices":3,"collectionCases":0,"openActivities":4,"lastPaymentAmount":3440.71,"lastPaymentDate":"2026-04-19","avgInvoiceBalance":3596.47,"avgAmountLate":3596.47,"avgDaysToPay":73,"creditLimit":20000,"creditUsedPct":54,"aged":{"Current":0.0,"30 days":1087.94,"60 days":8584.51,"90 days":1116.96,"180 and over":0.0},"factors":["Average days to pay","Customer group","Payment terms"]},{"account":"TEN-5005","name":"Michiana Air Charter LLC","group":"Charter Operator","terms":"Net 15","currency":"USD","city":"South Bend, IN","address":"4501 Terminal Drive, Hangar 7\nSouth Bend, IN 46628\nUSA","balance":18131.89,"onTime":1,"late":57,"veryLate":42,"onTimeAmt":250.78,"lateAmt":10207.99,"veryLateAmt":7673.12,"openInvoices":4,"lateInvoices":4,"collectionCases":1,"openActivities":4,"lastPaymentAmount":9628.58,"lastPaymentDate":"2026-03-18","avgInvoiceBalance":4532.97,"avgAmountLate":4461.54,"avgDaysToPay":122,"creditLimit":30000,"creditUsedPct":60,"aged":{"Current":0.0,"30 days":0.0,"60 days":2315.37,"90 days":2609.1,"180 and over":13207.42},"factors":["Average days to pay","Open collection cases","Customer group"]}],"transactions":[{"account":"AIR-1001","name":"Allegiant Air, LLC","onTime":73,"late":27,"veryLate":0,"voucher":"FTV-30000015","invoice":"FTI-00001013","type":"Customer","description":"Common use terminal equipment (CUTE)","date":"2026-06-03","due":"2026-07-03","dpd":20,"amount":3145.02,"balance":3145.02,"currency":"USD"},{"account":"AIR-1001","name":"Allegiant Air, LLC","onTime":80,"late":20,"veryLate":0,"voucher":"FTV-30000007","invoice":"FTI-00001004","type":"Customer","description":"Terminal rent - ticket counter & gate","date":"2026-06-19","due":"2026-07-19","dpd":4,"amount":25990.39,"balance":25990.39,"currency":"USD"},{"account":"AIR-1001","name":"Allegiant Air, LLC","onTime":92,"late":8,"veryLate":0,"voucher":"FTV-30000001","invoice":"FTI-00001002","type":"Customer","description":"Landing fees - signatory rate","date":"2026-07-01","due":"2026-07-31","dpd":-8,"amount":14738.1,"balance":14738.1,"currency":"USD"},{"account":"AIR-1001","name":"Allegiant Air, LLC","onTime":86,"late":14,"veryLate":0,"voucher":"FTV-30000010","invoice":"FTI-00001006","type":"Customer","description":"Passenger boarding bridge use fee","date":"2026-07-11","due":"2026-08-10","dpd":-18,"amount":7185.68,"balance":7185.68,"currency":"USD"},{"account":"AIR-1002","name":"Delta Air Lines, Inc.","onTime":92,"late":8,"veryLate":0,"voucher":"FTV-30000028","invoice":"FTI-00001021","type":"Customer","description":"Terminal rent - ticket counter & gate","date":"2026-07-08","due":"2026-08-07","dpd":-15,"amount":20392.49,"balance":20392.49,"currency":"USD"},{"account":"AIR-1002","name":"Delta Air Lines, Inc.","onTime":89,"late":11,"veryLate":0,"voucher":"FTV-30000035","invoice":"FTI-00001024","type":"Customer","description":"Passenger boarding bridge use fee","date":"2026-07-12","due":"2026-08-11","dpd":-19,"amount":3555.36,"balance":3555.36,"currency":"USD"},{"account":"AIR-1002","name":"Delta Air Lines, Inc.","onTime":89,"late":11,"veryLate":0,"voucher":"FTV-30000019","invoice":"FTI-00001019","type":"Customer","description":"Landing fees - signatory rate","date":"2026-07-22","due":"2026-08-21","dpd":-29,"amount":22671.65,"balance":22671.65,"currency":"USD"},{"account":"AIR-1003","name":"United Airlines, Inc.","onTime":90,"late":10,"veryLate":0,"voucher":"FTV-30000046","invoice":"FTI-00001028","type":"Customer","description":"Terminal rent - ticket counter & gate","date":"2026-07-08","due":"2026-08-07","dpd":-15,"amount":20031.72,"balance":20031.72,"currency":"USD"},{"account":"AIR-1003","name":"United Airlines, Inc.","onTime":87,"late":13,"veryLate":0,"voucher":"FTV-30000054","invoice":"FTI-00001033","type":"Customer","description":"Passenger boarding bridge use fee","date":"2026-07-12","due":"2026-08-11","dpd":-19,"amount":4845.42,"balance":4845.42,"currency":"USD"},{"account":"AIR-1003","name":"United Airlines, Inc.","onTime":90,"late":10,"veryLate":0,"voucher":"FTV-30000043","invoice":"FTI-00001026","type":"Customer","description":"Landing fees - signatory rate","date":"2026-07-24","due":"2026-08-23","dpd":-31,"amount":16720.35,"balance":16720.35,"currency":"USD"},{"account":"AIR-1004","name":"American Airlines, Inc.","onTime":83,"late":17,"veryLate":0,"voucher":"FTV-30000066","invoice":"FTI-00001046","type":"Customer","description":"Terminal rent - ticket counter & gate","date":"2026-06-19","due":"2026-07-19","dpd":4,"amount":17778.02,"balance":17778.02,"currency":"USD"},{"account":"AIR-1004","name":"American Airlines, Inc.","onTime":85,"late":15,"veryLate":0,"voucher":"FTV-30000057","invoice":"FTI-00001040","type":"Customer","description":"Landing fees - signatory rate","date":"2026-06-29","due":"2026-07-29","dpd":-6,"amount":24460.49,"balance":24460.49,"currency":"USD"},{"account":"AIR-1004","name":"American Airlines, Inc.","onTime":92,"late":8,"veryLate":0,"voucher":"FTV-30000072","invoice":"FTI-00001049","type":"Customer","description":"Passenger boarding bridge use fee","date":"2026-07-13","due":"2026-08-12","dpd":-20,"amount":6739.93,"balance":6739.93,"currency":"USD"},{"account":"AIR-1005","name":"SkyWest Airlines, Inc.","onTime":72,"late":28,"veryLate":0,"voucher":"FTV-30000083","invoice":"FTI-00001059","type":"Customer","description":"Terminal rent - shared use","date":"2026-06-20","due":"2026-07-20","dpd":3,"amount":7271.5,"balance":7271.5,"currency":"USD"},{"account":"AIR-1005","name":"SkyWest Airlines, Inc.","onTime":86,"late":14,"veryLate":0,"voucher":"FTV-30000077","invoice":"FTI-00001054","type":"Customer","description":"Landing fees - non-signatory rate","date":"2026-06-30","due":"2026-07-30","dpd":-7,"amount":12865.37,"balance":12865.37,"currency":"USD"},{"account":"AIR-1005","name":"SkyWest Airlines, Inc.","onTime":88,"late":12,"veryLate":0,"voucher":"FTV-30000090","invoice":"FTI-00001061","type":"Customer","description":"Ramp & RON parking fees","date":"2026-07-10","due":"2026-08-09","dpd":-17,"amount":3425.23,"balance":3425.23,"currency":"USD"},{"account":"AIR-1006","name":"Republic Airways Inc.","onTime":12,"late":64,"veryLate":24,"voucher":"FTV-30000107","invoice":"FTI-00001070","type":"Customer","description":"Ramp & RON parking fees","date":"2026-04-16","due":"2026-05-16","dpd":68,"amount":3808.65,"balance":3808.65,"currency":"USD"},{"account":"AIR-1006","name":"Republic Airways Inc.","onTime":32,"late":61,"veryLate":7,"voucher":"FTV-30000104","invoice":"FTI-00001068","type":"Customer","description":"Terminal rent - shared use","date":"2026-05-14","due":"2026-06-13","dpd":40,"amount":18349.3,"balance":18349.3,"currency":"USD"},{"account":"AIR-1006","name":"Republic Airways Inc.","onTime":48,"late":52,"veryLate":0,"voucher":"FTV-30000098","invoice":"FTI-00001064","type":"Customer","description":"Landing fees - non-signatory rate","date":"2026-06-07","due":"2026-07-07","dpd":16,"amount":6756.76,"balance":6756.76,"currency":"USD"},{"account":"AIR-1007","name":"Air Wisconsin Airlines LLC","onTime":10,"late":67,"veryLate":23,"voucher":"FTV-30000121","invoice":"FTI-00001087","type":"Customer","description":"Ramp & RON parking fees","date":"2026-04-18","due":"2026-05-18","dpd":66,"amount":3375.9,"balance":3375.9,"currency":"USD"},{"account":"AIR-1007","name":"Air Wisconsin Airlines LLC","onTime":33,"late":61,"veryLate":6,"voucher":"FTV-30000117","invoice":"FTI-00001081","type":"Customer","description":"Terminal rent - shared use","date":"2026-05-16","due":"2026-06-15","dpd":38,"amount":13127.25,"balance":13127.25,"currency":"USD"},{"account":"AIR-1007","name":"Air Wisconsin Airlines LLC","onTime":62,"late":38,"veryLate":0,"voucher":"FTV-30000112","invoice":"FTI-00001074","type":"Customer","description":"Landing fees - non-signatory rate","date":"2026-06-10","due":"2026-07-10","dpd":13,"amount":8367.9,"balance":8367.9,"currency":"USD"},{"account":"CGO-1201","name":"FedEx Corporate Services, Inc.","onTime":86,"late":14,"veryLate":0,"voucher":"FTV-30000132","invoice":"FTI-00001099","type":"Customer","description":"Cargo apron & building lease","date":"2026-07-10","due":"2026-08-09","dpd":-17,"amount":15652.0,"balance":15652.0,"currency":"USD"},{"account":"CGO-1201","name":"FedEx Corporate Services, Inc.","onTime":88,"late":12,"veryLate":0,"voucher":"FTV-30000141","invoice":"FTI-00001103","type":"Customer","description":"Fuel flowage fee - cargo","date":"2026-07-11","due":"2026-08-10","dpd":-18,"amount":2018.9,"balance":2018.9,"currency":"USD"},{"account":"CGO-1201","name":"FedEx Corporate Services, Inc.","onTime":92,"late":8,"veryLate":0,"voucher":"FTV-30000124","invoice":"FTI-00001092","type":"Customer","description":"Cargo landing fees","date":"2026-07-21","due":"2026-08-20","dpd":-28,"amount":10838.59,"balance":10838.59,"currency":"USD"},{"account":"CGO-1202","name":"United Parcel Service Co.","onTime":86,"late":14,"veryLate":0,"voucher":"FTV-30000153","invoice":"FTI-00001112","type":"Customer","description":"Cargo apron & building lease","date":"2026-07-10","due":"2026-08-09","dpd":-17,"amount":21513.22,"balance":21513.22,"currency":"USD"},{"account":"CGO-1202","name":"United Parcel Service Co.","onTime":89,"late":11,"veryLate":0,"voucher":"FTV-30000150","invoice":"FTI-00001107","type":"Customer","description":"Cargo landing fees","date":"2026-07-19","due":"2026-08-18","dpd":-26,"amount":17121.58,"balance":17121.58,"currency":"USD"},{"account":"CGO-1203","name":"Mountain Air Cargo, Inc.","onTime":59,"late":41,"veryLate":0,"voucher":"FTV-30000164","invoice":"FTI-00001121","type":"Customer","description":"Cargo apron & building lease","date":"2026-06-17","due":"2026-07-17","dpd":6,"amount":12884.48,"balance":12884.48,"currency":"USD"},{"account":"CGO-1203","name":"Mountain Air Cargo, Inc.","onTime":89,"late":11,"veryLate":0,"voucher":"FTV-30000156","invoice":"FTI-00001119","type":"Customer","description":"Cargo landing fees","date":"2026-07-03","due":"2026-08-02","dpd":-10,"amount":17206.66,"balance":17206.66,"currency":"USD"},{"account":"CGO-1203","name":"Mountain Air Cargo, Inc.","onTime":74,"late":26,"veryLate":0,"voucher":"FTV-30000168","invoice":"FTI-00001125","type":"Customer","description":"Fuel flowage fee - cargo","date":"2026-07-13","due":"2026-08-12","dpd":-20,"amount":3936.22,"balance":3936.22,"currency":"USD"},{"account":"CON-3001","name":"SSP America, Inc.","onTime":67,"late":33,"veryLate":0,"voucher":"FTV-30000268","invoice":"FTI-00001191","type":"Customer","description":"Terminal space rent","date":"2026-06-17","due":"2026-07-17","dpd":6,"amount":14121.32,"balance":14121.32,"currency":"USD"},{"account":"CON-3001","name":"SSP America, Inc.","onTime":75,"late":25,"veryLate":0,"voucher":"FTV-30000261","invoice":"FTI-00001188","type":"Customer","description":"Concession fee - percentage of gross","date":"2026-07-05","due":"2026-08-04","dpd":-12,"amount":18603.22,"balance":18603.22,"currency":"USD"},{"account":"CON-3001","name":"SSP America, Inc.","onTime":84,"late":16,"veryLate":0,"voucher":"FTV-30000275","invoice":"FTI-00001195","type":"Customer","description":"Utilities & CAM recovery","date":"2026-07-08","due":"2026-08-07","dpd":-15,"amount":2095.73,"balance":2095.73,"currency":"USD"},{"account":"CON-3002","name":"Paradies Lagardere","onTime":53,"late":47,"veryLate":0,"voucher":"FTV-30000290","invoice":"FTI-00001204","type":"Customer","description":"Terminal space rent","date":"2026-06-18","due":"2026-07-18","dpd":5,"amount":4432.1,"balance":4432.1,"currency":"USD"},{"account":"CON-3002","name":"Paradies Lagardere","onTime":81,"late":19,"veryLate":0,"voucher":"FTV-30000284","invoice":"FTI-00001200","type":"Customer","description":"Concession fee - percentage of gross","date":"2026-07-01","due":"2026-07-31","dpd":-8,"amount":14715.62,"balance":9809.65,"currency":"USD"},{"account":"CON-3002","name":"Paradies Lagardere","onTime":84,"late":16,"veryLate":0,"voucher":"FTV-30000299","invoice":"FTI-00001210","type":"Customer","description":"Utilities & CAM recovery","date":"2026-07-09","due":"2026-08-08","dpd":-16,"amount":2213.04,"balance":2213.04,"currency":"USD"},{"account":"CON-3003","name":"Clear Channel Airports","onTime":31,"late":62,"veryLate":7,"voucher":"FTV-30000314","invoice":"FTI-00001223","type":"Customer","description":"Digital display placement fee","date":"2026-05-01","due":"2026-06-15","dpd":38,"amount":3783.46,"balance":3783.46,"currency":"USD"},{"account":"CON-3003","name":"Clear Channel Airports","onTime":50,"late":50,"veryLate":0,"voucher":"FTV-30000307","invoice":"FTI-00001217","type":"Customer","description":"Advertising concession - minimum annual guarantee","date":"2026-05-23","due":"2026-07-07","dpd":16,"amount":7909.64,"balance":7909.64,"currency":"USD"},{"account":"CON-3004","name":"Michiana Coffee Roasters LLC","onTime":4,"late":66,"veryLate":30,"voucher":"FTV-30000332","invoice":"FTI-00001238","type":"Customer","description":"Utilities & CAM recovery","date":"2026-04-20","due":"2026-05-20","dpd":64,"amount":3144.91,"balance":3144.91,"currency":"USD"},{"account":"CON-3004","name":"Michiana Coffee Roasters LLC","onTime":15,"late":73,"veryLate":12,"voucher":"FTV-30000324","invoice":"FTI-00001234","type":"Customer","description":"Terminal space rent","date":"2026-05-17","due":"2026-06-16","dpd":37,"amount":4195.42,"balance":4195.42,"currency":"USD"},{"account":"CON-3004","name":"Michiana Coffee Roasters LLC","onTime":34,"late":66,"veryLate":0,"voucher":"FTV-30000318","invoice":"FTI-00001229","type":"Customer","description":"Concession fee - percentage of gross","date":"2026-06-10","due":"2026-07-10","dpd":13,"amount":13860.0,"balance":13860.0,"currency":"USD"},{"account":"CON-3005","name":"Bendix Newsstand & Gifts LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000364","invoice":"FTI-00001260","type":"Customer","description":"Concession fee - percentage of gross","date":"2025-12-07","due":"2026-01-06","dpd":198,"amount":19995.85,"balance":19995.85,"currency":"USD"},{"account":"CON-3005","name":"Bendix Newsstand & Gifts LLC","onTime":1,"late":54,"veryLate":45,"voucher":"CLV-50000001","invoice":"000020","type":"Collection letter","description":"Collection letter fee - 2nd notice","date":"2026-01-12","due":"2026-02-11","dpd":162,"amount":536.61,"balance":536.61,"currency":"USD"},{"account":"CON-3005","name":"Bendix Newsstand & Gifts LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000356","invoice":"FTI-00001256","type":"Customer","description":"Utilities & CAM recovery","date":"2026-02-27","due":"2026-03-29","dpd":116,"amount":4134.31,"balance":4134.31,"currency":"USD"},{"account":"CON-3005","name":"Bendix Newsstand & Gifts LLC","onTime":1,"late":57,"veryLate":42,"voucher":"FTV-30000348","invoice":"FTI-00001250","type":"Customer","description":"Terminal space rent","date":"2026-04-05","due":"2026-05-05","dpd":79,"amount":8749.06,"balance":8749.06,"currency":"USD"},{"account":"CON-3005","name":"Bendix Newsstand & Gifts LLC","onTime":7,"late":73,"veryLate":20,"voucher":"FTV-30000340","invoice":"FTI-00001243","type":"Customer","description":"Concession fee - percentage of gross","date":"2026-05-09","due":"2026-06-08","dpd":45,"amount":11376.3,"balance":11376.3,"currency":"USD"},{"account":"EDU-6101","name":"University of Notre Dame","onTime":76,"late":24,"veryLate":0,"voucher":"FTV-30000630","invoice":"FTI-00001456","type":"Customer","description":"Hangar rent - team aircraft","date":"2026-07-07","due":"2026-08-06","dpd":-14,"amount":8078.39,"balance":8078.39,"currency":"USD"},{"account":"EDU-6101","name":"University of Notre Dame","onTime":91,"late":9,"veryLate":0,"voucher":"FTV-30000637","invoice":"FTI-00001463","type":"Customer","description":"Aviation program facility lease","date":"2026-07-17","due":"2026-08-16","dpd":-24,"amount":3277.96,"balance":3277.96,"currency":"USD"},{"account":"EDU-6101","name":"University of Notre Dame","onTime":90,"late":10,"veryLate":0,"voucher":"FTV-30000625","invoice":"FTI-00001450","type":"Customer","description":"Charter operations & apron fee","date":"2026-07-20","due":"2026-08-19","dpd":-27,"amount":10423.31,"balance":10423.31,"currency":"USD"},{"account":"EDU-6102","name":"Ivy Tech Community College","onTime":83,"late":17,"veryLate":0,"voucher":"FTV-30000648","invoice":"FTI-00001473","type":"Customer","description":"Hangar rent - team aircraft","date":"2026-06-18","due":"2026-07-18","dpd":5,"amount":5634.31,"balance":5634.31,"currency":"USD"},{"account":"EDU-6102","name":"Ivy Tech Community College","onTime":83,"late":17,"veryLate":0,"voucher":"FTV-30000644","invoice":"FTI-00001469","type":"Customer","description":"Charter operations & apron fee","date":"2026-07-05","due":"2026-08-04","dpd":-12,"amount":8858.11,"balance":8858.11,"currency":"USD"},{"account":"FBO-4001","name":"Atlantic Aviation SBN, LLC","onTime":78,"late":22,"veryLate":0,"voucher":"INV-10000701","invoice":"CIV-000715","type":"Sales order","description":"Fuel flowage fee","date":"2026-07-05","due":"2026-07-20","dpd":3,"amount":9897.91,"balance":9897.91,"currency":"USD"},{"account":"FBO-4001","name":"Atlantic Aviation SBN, LLC","onTime":75,"late":25,"veryLate":0,"voucher":"FTV-30000368","invoice":"FTI-00001263","type":"Customer","description":"FBO ground lease","date":"2026-07-19","due":"2026-08-03","dpd":-11,"amount":32193.09,"balance":32193.09,"currency":"USD"},{"account":"FBO-4001","name":"Atlantic Aviation SBN, LLC","onTime":83,"late":17,"veryLate":0,"voucher":"FTV-30000377","invoice":"FTI-00001266","type":"Customer","description":"Into-plane servicing permit","date":"2026-07-29","due":"2026-08-13","dpd":-21,"amount":1507.63,"balance":1507.63,"currency":"USD"},{"account":"FBO-4002","name":"Corporate Wings, LLC","onTime":60,"late":40,"veryLate":0,"voucher":"INV-10000709","invoice":"CIV-000717","type":"Sales order","description":"Fuel flowage fee","date":"2026-07-05","due":"2026-07-20","dpd":3,"amount":4368.48,"balance":4368.48,"currency":"USD"},{"account":"FBO-4002","name":"Corporate Wings, LLC","onTime":83,"late":17,"veryLate":0,"voucher":"FTV-30000380","invoice":"FTI-00001268","type":"Customer","description":"FBO ground lease","date":"2026-07-14","due":"2026-07-29","dpd":-6,"amount":22993.83,"balance":22993.83,"currency":"USD"},{"account":"FBO-4002","name":"Corporate Wings, LLC","onTime":86,"late":14,"veryLate":0,"voucher":"FTV-30000383","invoice":"FTI-00001272","type":"Customer","description":"Into-plane servicing permit","date":"2026-07-24","due":"2026-08-08","dpd":-16,"amount":1380.69,"balance":1380.69,"currency":"USD"},{"account":"FBO-4003","name":"Avfuel Corporation","onTime":89,"late":11,"veryLate":0,"voucher":"INV-10000713","invoice":"CIV-000724","type":"Sales order","description":"Fuel flowage fee","date":"2026-07-22","due":"2026-08-06","dpd":-14,"amount":6792.88,"balance":4638.34,"currency":"USD"},{"account":"FBO-4003","name":"Avfuel Corporation","onTime":81,"late":19,"veryLate":0,"voucher":"FTV-30000390","invoice":"FTI-00001274","type":"Customer","description":"FBO ground lease","date":"2026-08-04","due":"2026-08-19","dpd":-27,"amount":37043.98,"balance":37043.98,"currency":"USD"},{"account":"GOV-6001","name":"Transportation Security Administration","onTime":52,"late":48,"veryLate":0,"voucher":"180000101","invoice":"000101","type":"Project","description":"AIP grant reimbursable - runway rehabilitation","date":"2026-05-30","due":"2026-07-14","dpd":9,"amount":172330.76,"balance":172330.76,"currency":"USD"},{"account":"GOV-6001","name":"Transportation Security Administration","onTime":88,"late":12,"veryLate":0,"voucher":"FTV-30000598","invoice":"FTI-00001428","type":"Customer","description":"Terminal space lease - federal inspection/office","date":"2026-06-19","due":"2026-08-03","dpd":-11,"amount":19799.75,"balance":19799.75,"currency":"USD"},{"account":"GOV-6001","name":"Transportation Security Administration","onTime":85,"late":15,"veryLate":0,"voucher":"180000107","invoice":"000108","type":"Project","description":"Reimbursable services agreement","date":"2026-06-23","due":"2026-08-07","dpd":-15,"amount":57015.41,"balance":57015.41,"currency":"USD"},{"account":"GOV-6002","name":"Indiana Department of Transportation","onTime":14,"late":66,"veryLate":20,"voucher":"180000119","invoice":"000119","type":"Project","description":"Reimbursable services agreement","date":"2026-04-05","due":"2026-05-20","dpd":64,"amount":65741.86,"balance":65741.86,"currency":"USD"},{"account":"GOV-6002","name":"Indiana Department of Transportation","onTime":25,"late":70,"veryLate":5,"voucher":"180000114","invoice":"000115","type":"Project","description":"AIP grant reimbursable - runway rehabilitation","date":"2026-05-02","due":"2026-06-16","dpd":37,"amount":363803.69,"balance":363803.69,"currency":"USD"},{"account":"GOV-6002","name":"Indiana Department of Transportation","onTime":60,"late":40,"veryLate":0,"voucher":"FTV-30000602","invoice":"FTI-00001435","type":"Customer","description":"Terminal space lease - federal inspection/office","date":"2026-05-21","due":"2026-07-05","dpd":18,"amount":14779.08,"balance":14779.08,"currency":"USD"},{"account":"GOV-6003","name":"St. Joseph County, Indiana","onTime":68,"late":32,"veryLate":0,"voucher":"180000127","invoice":"000121","type":"Project","description":"AIP grant reimbursable - runway rehabilitation","date":"2026-06-05","due":"2026-07-20","dpd":3,"amount":230751.57,"balance":230751.57,"currency":"USD"},{"account":"GOV-6003","name":"St. Joseph County, Indiana","onTime":89,"late":11,"veryLate":0,"voucher":"FTV-30000608","invoice":"FTI-00001441","type":"Customer","description":"Terminal space lease - federal inspection/office","date":"2026-06-14","due":"2026-07-29","dpd":-6,"amount":11522.77,"balance":11522.77,"currency":"USD"},{"account":"GOV-6004","name":"City of South Bend","onTime":64,"late":36,"veryLate":0,"voucher":"180000132","invoice":"000128","type":"Project","description":"AIP grant reimbursable - runway rehabilitation","date":"2026-06-04","due":"2026-07-19","dpd":4,"amount":419449.43,"balance":309916.91,"currency":"USD"},{"account":"GOV-6004","name":"City of South Bend","onTime":87,"late":13,"veryLate":0,"voucher":"FTV-30000617","invoice":"FTI-00001446","type":"Customer","description":"Terminal space lease - federal inspection/office","date":"2026-06-19","due":"2026-08-03","dpd":-11,"amount":18340.96,"balance":18340.96,"currency":"USD"},{"account":"MRO-4101","name":"Hoosier Aviation Maintenance, Inc.","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000417","invoice":"FTI-00001288","type":"Customer","description":"Hangar lease - maintenance facility","date":"2025-12-10","due":"2026-01-09","dpd":195,"amount":21970.75,"balance":21970.75,"currency":"USD"},{"account":"MRO-4101","name":"Hoosier Aviation Maintenance, Inc.","onTime":1,"late":54,"veryLate":45,"voucher":"CLV-50000009","invoice":"000023","type":"Collection letter","description":"Collection letter fee - 2nd notice","date":"2026-01-12","due":"2026-02-11","dpd":162,"amount":1047.94,"balance":1047.94,"currency":"USD"},{"account":"MRO-4101","name":"Hoosier Aviation Maintenance, Inc.","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000414","invoice":"FTI-00001286","type":"Customer","description":"Utilities & CAM recovery","date":"2026-02-27","due":"2026-03-29","dpd":116,"amount":749.13,"balance":749.13,"currency":"USD"},{"account":"MRO-4101","name":"Hoosier Aviation Maintenance, Inc.","onTime":1,"late":61,"veryLate":38,"voucher":"FTV-30000405","invoice":"FTI-00001280","type":"Customer","description":"Land lease - airside parcel","date":"2026-04-09","due":"2026-05-09","dpd":75,"amount":7944.6,"balance":7944.6,"currency":"USD"},{"account":"MRO-4101","name":"Hoosier Aviation Maintenance, Inc.","onTime":7,"late":72,"veryLate":21,"voucher":"FTV-30000399","invoice":"FTI-00001277","type":"Customer","description":"Hangar lease - maintenance facility","date":"2026-05-06","due":"2026-06-05","dpd":48,"amount":7543.25,"balance":7543.25,"currency":"USD"},{"account":"RAC-2001","name":"Avis Budget Car Rental, LLC","onTime":68,"late":32,"veryLate":0,"voucher":"FTV-30000183","invoice":"FTI-00001131","type":"Customer","description":"Counter & ready-return space rent","date":"2026-06-19","due":"2026-07-19","dpd":4,"amount":23603.9,"balance":23603.9,"currency":"USD"},{"account":"RAC-2001","name":"Avis Budget Car Rental, LLC","onTime":80,"late":20,"veryLate":0,"voucher":"FTV-30000176","invoice":"FTI-00001129","type":"Customer","description":"Concession fee - MAG true-up","date":"2026-07-05","due":"2026-08-04","dpd":-12,"amount":101762.19,"balance":101762.19,"currency":"USD"},{"account":"RAC-2001","name":"Avis Budget Car Rental, LLC","onTime":83,"late":17,"veryLate":0,"voucher":"FTV-30000192","invoice":"FTI-00001136","type":"Customer","description":"Customer facility charge remittance","date":"2026-07-09","due":"2026-08-08","dpd":-16,"amount":13536.55,"balance":13536.55,"currency":"USD"},{"account":"RAC-2002","name":"The Hertz Corporation","onTime":15,"late":63,"veryLate":22,"voucher":"FTV-30000213","invoice":"FTI-00001154","type":"Customer","description":"Customer facility charge remittance","date":"2026-04-20","due":"2026-05-20","dpd":64,"amount":12698.28,"balance":12698.28,"currency":"USD"},{"account":"RAC-2002","name":"The Hertz Corporation","onTime":26,"late":66,"veryLate":8,"voucher":"FTV-30000205","invoice":"FTI-00001148","type":"Customer","description":"Counter & ready-return space rent","date":"2026-05-16","due":"2026-06-15","dpd":38,"amount":10754.04,"balance":10754.04,"currency":"USD"},{"account":"RAC-2002","name":"The Hertz Corporation","onTime":30,"late":66,"veryLate":4,"voucher":"FTV-30000222","invoice":"FTI-00001160","type":"Customer","description":"Concession fee - MAG true-up","date":"2026-05-24","due":"2026-06-23","dpd":30,"amount":115384.28,"balance":115384.28,"currency":"USD"},{"account":"RAC-2002","name":"The Hertz Corporation","onTime":43,"late":57,"veryLate":0,"voucher":"FTV-30000198","invoice":"FTI-00001142","type":"Customer","description":"Concession fee - MAG true-up","date":"2026-06-10","due":"2026-07-10","dpd":13,"amount":61917.73,"balance":61917.73,"currency":"USD"},{"account":"RAC-2003","name":"Enterprise Leasing Company of Indianapolis, LLC","onTime":88,"late":12,"veryLate":0,"voucher":"FTV-30000232","invoice":"FTI-00001167","type":"Customer","description":"Counter & ready-return space rent","date":"2026-07-08","due":"2026-08-07","dpd":-15,"amount":16351.1,"balance":16351.1,"currency":"USD"},{"account":"RAC-2003","name":"Enterprise Leasing Company of Indianapolis, LLC","onTime":85,"late":15,"veryLate":0,"voucher":"FTV-30000239","invoice":"FTI-00001174","type":"Customer","description":"Customer facility charge remittance","date":"2026-07-15","due":"2026-08-14","dpd":-22,"amount":27259.96,"balance":27259.96,"currency":"USD"},{"account":"RAC-2003","name":"Enterprise Leasing Company of Indianapolis, LLC","onTime":76,"late":24,"veryLate":0,"voucher":"FTV-30000229","invoice":"FTI-00001163","type":"Customer","description":"Concession fee - MAG true-up","date":"2026-07-20","due":"2026-08-19","dpd":-27,"amount":95601.75,"balance":95601.75,"currency":"USD"},{"account":"RAC-2004","name":"Sixt Rent A Car, LLC","onTime":8,"late":66,"veryLate":26,"voucher":"FTV-30000256","invoice":"FTI-00001184","type":"Customer","description":"Customer facility charge remittance","date":"2026-04-18","due":"2026-05-18","dpd":66,"amount":26875.38,"balance":26875.38,"currency":"USD"},{"account":"RAC-2004","name":"Sixt Rent A Car, LLC","onTime":29,"late":63,"veryLate":8,"voucher":"FTV-30000251","invoice":"FTI-00001181","type":"Customer","description":"Counter & ready-return space rent","date":"2026-05-17","due":"2026-06-16","dpd":37,"amount":12324.76,"balance":12324.76,"currency":"USD"},{"account":"RAC-2004","name":"Sixt Rent A Car, LLC","onTime":47,"late":53,"veryLate":0,"voucher":"FTV-30000248","invoice":"FTI-00001179","type":"Customer","description":"Concession fee - MAG true-up","date":"2026-06-10","due":"2026-07-10","dpd":13,"amount":75427.62,"balance":75427.62,"currency":"USD"},{"account":"SVC-4501","name":"Unifi Aviation, LLC","onTime":19,"late":60,"veryLate":21,"voucher":"FTV-30000435","invoice":"FTI-00001305","type":"Customer","description":"Ground handling permit fee","date":"2026-04-19","due":"2026-05-19","dpd":65,"amount":4346.78,"balance":4346.78,"currency":"USD"},{"account":"SVC-4501","name":"Unifi Aviation, LLC","onTime":29,"late":64,"veryLate":7,"voucher":"FTV-30000432","invoice":"FTI-00001301","type":"Customer","description":"Ramp access & badging recovery","date":"2026-05-17","due":"2026-06-16","dpd":37,"amount":2247.57,"balance":2247.57,"currency":"USD"},{"account":"SVC-4501","name":"Unifi Aviation, LLC","onTime":60,"late":40,"veryLate":0,"voucher":"FTV-30000424","invoice":"FTI-00001294","type":"Customer","description":"Ground handling permit fee","date":"2026-06-06","due":"2026-07-06","dpd":17,"amount":4994.35,"balance":4994.35,"currency":"USD"},{"account":"SVC-4502","name":"SP Plus Corporation","onTime":74,"late":26,"veryLate":0,"voucher":"FTV-30000450","invoice":"FTI-00001318","type":"Customer","description":"Shuttle operations management fee","date":"2026-06-20","due":"2026-07-20","dpd":3,"amount":17298.41,"balance":17298.41,"currency":"USD"},{"account":"SVC-4502","name":"SP Plus Corporation","onTime":81,"late":19,"veryLate":0,"voucher":"FTV-30000443","invoice":"FTI-00001311","type":"Customer","description":"Parking concession fee","date":"2026-07-03","due":"2026-08-02","dpd":-10,"amount":53280.74,"balance":53280.74,"currency":"USD"},{"account":"SVC-4502","name":"SP Plus Corporation","onTime":80,"late":20,"veryLate":0,"voucher":"FTV-30000459","invoice":"FTI-00001321","type":"Customer","description":"Parking concession fee","date":"2026-07-11","due":"2026-08-10","dpd":-18,"amount":114364.15,"balance":114364.15,"currency":"USD"},{"account":"SVC-4503","name":"Great Lakes Ground Support LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000483","invoice":"FTI-00001340","type":"Customer","description":"Ramp access & badging recovery","date":"2025-12-06","due":"2026-01-05","dpd":199,"amount":3004.81,"balance":3004.81,"currency":"USD"},{"account":"SVC-4503","name":"Great Lakes Ground Support LLC","onTime":1,"late":54,"veryLate":45,"voucher":"CLV-50000016","invoice":"000025","type":"Collection letter","description":"Collection letter fee - 2nd notice","date":"2026-01-14","due":"2026-02-13","dpd":160,"amount":141.79,"balance":141.79,"currency":"USD"},{"account":"SVC-4503","name":"Great Lakes Ground Support LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000475","invoice":"FTI-00001337","type":"Customer","description":"Ground handling permit fee","date":"2026-02-22","due":"2026-03-24","dpd":121,"amount":4665.54,"balance":4665.54,"currency":"USD"},{"account":"SVC-4503","name":"Great Lakes Ground Support LLC","onTime":2,"late":54,"veryLate":44,"voucher":"FTV-30000468","invoice":"FTI-00001330","type":"Customer","description":"Ramp access & badging recovery","date":"2026-04-03","due":"2026-05-03","dpd":81,"amount":3185.02,"balance":3185.02,"currency":"USD"},{"account":"SVC-4503","name":"Great Lakes Ground Support LLC","onTime":6,"late":72,"veryLate":22,"voucher":"FTV-30000465","invoice":"FTI-00001324","type":"Customer","description":"Ground handling permit fee","date":"2026-05-08","due":"2026-06-07","dpd":46,"amount":3443.93,"balance":3443.93,"currency":"USD"},{"account":"TEN-5001","name":"Bendix Hangar Partners LLC","onTime":8,"late":64,"veryLate":28,"voucher":"FTV-30000497","invoice":"FTI-00001353","type":"Customer","description":"Land lease - general aviation parcel","date":"2026-04-19","due":"2026-05-19","dpd":65,"amount":2026.69,"balance":2026.69,"currency":"USD"},{"account":"TEN-5001","name":"Bendix Hangar Partners LLC","onTime":20,"late":69,"veryLate":11,"voucher":"FTV-30000491","invoice":"FTI-00001350","type":"Customer","description":"Corporate hangar lease","date":"2026-05-17","due":"2026-06-16","dpd":37,"amount":10778.89,"balance":10778.89,"currency":"USD"},{"account":"TEN-5001","name":"Bendix Hangar Partners LLC","onTime":32,"late":67,"veryLate":1,"voucher":"FTV-30000487","invoice":"FTI-00001344","type":"Customer","description":"T-hangar rent","date":"2026-06-06","due":"2026-07-06","dpd":17,"amount":1607.53,"balance":1607.53,"currency":"USD"},{"account":"TEN-5002","name":"Kankakee Valley Flyers, Inc.","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000518","invoice":"FTI-00001374","type":"Customer","description":"Tie-down & apron parking","date":"2025-12-09","due":"2026-01-08","dpd":196,"amount":853.2,"balance":853.2,"currency":"USD"},{"account":"TEN-5002","name":"Kankakee Valley Flyers, Inc.","onTime":1,"late":54,"veryLate":45,"voucher":"CLV-50000023","invoice":"000029","type":"Collection letter","description":"Collection letter fee - 2nd notice","date":"2026-01-07","due":"2026-02-06","dpd":167,"amount":46.62,"balance":46.62,"currency":"USD"},{"account":"TEN-5002","name":"Kankakee Valley Flyers, Inc.","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000511","invoice":"FTI-00001368","type":"Customer","description":"Land lease - general aviation parcel","date":"2026-02-25","due":"2026-03-27","dpd":118,"amount":1784.35,"balance":1784.35,"currency":"USD"},{"account":"TEN-5002","name":"Kankakee Valley Flyers, Inc.","onTime":2,"late":57,"veryLate":41,"voucher":"FTV-30000504","invoice":"FTI-00001362","type":"Customer","description":"Corporate hangar lease","date":"2026-04-06","due":"2026-05-06","dpd":78,"amount":3905.83,"balance":3905.83,"currency":"USD"},{"account":"TEN-5002","name":"Kankakee Valley Flyers, Inc.","onTime":12,"late":69,"veryLate":19,"voucher":"FTV-30000500","invoice":"FTI-00001356","type":"Customer","description":"T-hangar rent","date":"2026-05-10","due":"2026-06-09","dpd":44,"amount":1104.66,"balance":1104.66,"currency":"USD"},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000538","invoice":"FTI-00001387","type":"Customer","description":"Tie-down & apron parking","date":"2025-12-08","due":"2026-01-07","dpd":197,"amount":314.94,"balance":314.94,"currency":"USD"},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","onTime":1,"late":54,"veryLate":45,"voucher":"CLV-50000028","invoice":"000034","type":"Collection letter","description":"Collection letter fee - 2nd notice","date":"2026-01-16","due":"2026-02-15","dpd":158,"amount":34.64,"balance":34.64,"currency":"USD"},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000547","invoice":"FTI-00001394","type":"Customer","description":"T-hangar rent","date":"2026-01-21","due":"2026-02-20","dpd":153,"amount":1288.45,"balance":1288.45,"currency":"USD"},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000535","invoice":"FTI-00001384","type":"Customer","description":"Land lease - general aviation parcel","date":"2026-02-23","due":"2026-03-25","dpd":120,"amount":1516.05,"balance":1516.05,"currency":"USD"},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","onTime":2,"late":54,"veryLate":44,"voucher":"FTV-30000530","invoice":"FTI-00001381","type":"Customer","description":"Corporate hangar lease","date":"2026-04-05","due":"2026-05-05","dpd":79,"amount":5609.43,"balance":5609.43,"currency":"USD"},{"account":"TEN-5003","name":"Silver Hawk Aviation LLC","onTime":9,"late":69,"veryLate":22,"voucher":"FTV-30000526","invoice":"FTI-00001377","type":"Customer","description":"T-hangar rent","date":"2026-05-11","due":"2026-06-10","dpd":43,"amount":451.95,"balance":451.95,"currency":"USD"},{"account":"TEN-5004","name":"Portage Prairie Logistics LLC","onTime":5,"late":63,"veryLate":32,"voucher":"FTV-30000567","invoice":"FTI-00001405","type":"Customer","description":"Land lease - general aviation parcel","date":"2026-04-16","due":"2026-05-16","dpd":68,"amount":1116.96,"balance":1116.96,"currency":"USD"},{"account":"TEN-5004","name":"Portage Prairie Logistics LLC","onTime":13,"late":75,"veryLate":12,"voucher":"FTV-30000560","invoice":"FTI-00001402","type":"Customer","description":"Corporate hangar lease","date":"2026-05-19","due":"2026-06-18","dpd":35,"amount":8584.51,"balance":8584.51,"currency":"USD"},{"account":"TEN-5004","name":"Portage Prairie Logistics LLC","onTime":41,"late":57,"veryLate":2,"voucher":"FTV-30000555","invoice":"FTI-00001397","type":"Customer","description":"T-hangar rent","date":"2026-06-05","due":"2026-07-05","dpd":18,"amount":1087.94,"balance":1087.94,"currency":"USD"},{"account":"TEN-5005","name":"Michiana Air Charter LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000589","invoice":"FTI-00001424","type":"Customer","description":"Commercial operating permit","date":"2025-12-25","due":"2026-01-09","dpd":195,"amount":4927.11,"balance":4927.11,"currency":"USD"},{"account":"TEN-5005","name":"Michiana Air Charter LLC","onTime":1,"late":54,"veryLate":45,"voucher":"CLV-50000035","invoice":"000037","type":"Collection letter","description":"Collection letter fee - 2nd notice","date":"2026-01-26","due":"2026-02-10","dpd":163,"amount":285.72,"balance":285.72,"currency":"USD"},{"account":"TEN-5005","name":"Michiana Air Charter LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000586","invoice":"FTI-00001417","type":"Customer","description":"Hangar rent - charter fleet","date":"2026-03-14","due":"2026-03-29","dpd":116,"amount":7994.59,"balance":7994.59,"currency":"USD"},{"account":"TEN-5005","name":"Michiana Air Charter LLC","onTime":1,"late":54,"veryLate":45,"voucher":"FTV-30000581","invoice":"FTI-00001411","type":"Customer","description":"Landing fees - charter","date":"2026-04-20","due":"2026-05-05","dpd":79,"amount":3081.21,"balance":2609.1,"currency":"USD"},{"account":"TEN-5005","name":"Michiana Air Charter LLC","onTime":4,"late":72,"veryLate":24,"voucher":"FTV-30000572","invoice":"FTI-00001409","type":"Customer","description":"Commercial operating permit","date":"2026-05-23","due":"2026-06-07","dpd":46,"amount":4792.4,"balance":2315.37,"currency":"USD"}]};</script>
+<script>
+(function () {
+  "use strict";
+
+  const cfg = DEMO.config;
+  const CUSTOMERS = DEMO.customers;
+  const TRANSACTIONS = DEMO.transactions;
+  const byAccount = Object.fromEntries(CUSTOMERS.map(c => [c.account, c]));
+
+  /* ---------------- colour themes ----------------
+     The same fifteen themes offered by D365 F&O under
+     User options > Visual > Color theme, in the same order,
+     plus the brick red used by the current RSMUS environment. */
+  const THEMES = [
+    {key: "blue",         label: "Blue",          hdr: "#2B6BD6"},
+    {key: "berry",        label: "Berry",         hdr: "#9E1750"},
+    {key: "orchid",       label: "Orchid",        hdr: "#8C4A9C"},
+    {key: "orange",       label: "Orange",        hdr: "#C4511F"},
+    {key: "green",        label: "Green",         hdr: "#007A1C"},
+    {key: "darkblue",     label: "Dark blue",     hdr: "#1B2151"},
+    {key: "darkpurple",   label: "Dark purple",   hdr: "#40275C"},
+    {key: "azure",        label: "Azure",         hdr: "#0067D5"},
+    {key: "olive",        label: "Olive",         hdr: "#4E7A00"},
+    {key: "pink",         label: "Pink",          hdr: "#C2429B"},
+    {key: "teal",         label: "Teal",          hdr: "#00838F"},
+    {key: "steel",        label: "Steel blue",    hdr: "#005A8C"},
+    {key: "darkred",      label: "Dark red",      hdr: "#7A0000"},
+    {key: "maroon",       label: "Maroon",        hdr: "#3F0000"},
+    {key: "highcontrast", label: "High contrast", hdr: "#000000", hc: true},
+    {key: "red",          label: "Brick red",     hdr: "#8E2A26"},
+  ];
+  const themeByKey = Object.fromEntries(THEMES.map(t => [t.key, t]));
+
+  function mix(hex, other, ratio) {
+    const parse = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const [r1, g1, b1] = parse(hex), [r2, g2, b2] = parse(other);
+    const m = (a, b) => Math.round(a + (b - a) * ratio);
+    return "#" + [m(r1, r2), m(g1, g2), m(b1, b2)]
+      .map(v => v.toString(16).padStart(2, "0")).join("");
+  }
+
+  /* ---------------- settings ----------------
+     Workbook Config is the baseline. Anything changed on the User options
+     page is layered on top and kept in localStorage, so a presenter can
+     retheme or rebrand mid-demo without touching the spreadsheet. */
+  const SKEY = "d365-pp-demo-settings";
+  const DEFAULTS = {
+    theme: cfg.theme || "blue",
+    size: cfg.size || "comfortable",
+    legalEntity: cfg.legalEntity || "",
+    organization: cfg.organization || "",
+    userName: cfg.userName || "Demo User",
+    userInitials: cfg.userInitials || "",
+    userEmail: cfg.userEmail || "",
+    demoName: cfg.demoName || "",
+    agingDefinition: cfg.agingDefinition || "30_60_90_180",
+    redDotThreshold: cfg.redDotThreshold != null ? cfg.redDotThreshold : 60,
+    notifyEmail: false,
+    notifyActionCenter: true,
+  };
+
+  function readStored() {
+    try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch (e) { return {}; }
+  }
+  function writeStored(s) {
+    try { localStorage.setItem(SKEY, JSON.stringify(s)); return true; } catch (e) { return false; }
+  }
+
+  let settings = Object.assign({}, DEFAULTS, readStored());
+
+  function initials() {
+    if (settings.userInitials) return settings.userInitials.slice(0, 2).toUpperCase();
+    const src = settings.userName || settings.organization || "Demo User";
+    return src.split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(w => w[0]).join("").toUpperCase() || "DU";
+  }
+
+  function applyAppearance() {
+    const t = themeByKey[settings.theme] || themeByKey.blue;
+    const r = document.documentElement;
+    r.style.setProperty("--hdr", t.hdr);
+    r.style.setProperty("--hdr-hi", mix(t.hdr, "#FFFFFF", 0.18));
+    r.style.setProperty("--accent", t.hdr);
+    r.style.setProperty("--sel-bar", t.hdr);
+    r.style.setProperty("--sel", mix(t.hdr, "#FFFFFF", 0.90));
+    r.dataset.contrast = t.hc ? "high" : "normal";
+    r.dataset.size = settings.size === "compact" ? "compact" : "comfortable";
+  }
+
+  /* ---------------- formatting ---------------- */
+  const nf = new Intl.NumberFormat("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const money = v => nf.format(v || 0);
+  const fmtDate = iso => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    return `${m}/${d}/${y}`;
+  };
+  const esc = s => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  /* ---------------- icons ---------------- */
+  const I = {
+    waffle: '<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><g><rect x="0" y="0" width="4" height="4" rx=".5"/><rect x="7" y="0" width="4" height="4" rx=".5"/><rect x="14" y="0" width="4" height="4" rx=".5"/><rect x="0" y="7" width="4" height="4" rx=".5"/><rect x="7" y="7" width="4" height="4" rx=".5"/><rect x="14" y="7" width="4" height="4" rx=".5"/><rect x="0" y="14" width="4" height="4" rx=".5"/><rect x="7" y="14" width="4" height="4" rx=".5"/><rect x="14" y="14" width="4" height="4" rx=".5"/></g></svg>',
+    search: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6.6" cy="6.6" r="4.6"/><path d="M10.2 10.2 14 14"/></svg>',
+    bell: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 6.5a4 4 0 0 1 8 0c0 3 .9 4.2 1.4 4.7H2.6C3.1 10.7 4 9.5 4 6.5Z"/><path d="M6.6 13.2a1.6 1.6 0 0 0 2.8 0"/></svg>',
+    gear: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.4v1.8M8 12.8v1.8M14.6 8h-1.8M3.2 8H1.4M12.7 3.3l-1.3 1.3M4.6 11.4l-1.3 1.3M12.7 12.7l-1.3-1.3M4.6 4.6 3.3 3.3"/></svg>',
+    help: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><path d="M6.2 6.1a1.85 1.85 0 1 1 2.3 1.9c-.4.15-.5.5-.5.9v.4"/><circle cx="8" cy="11.6" r=".75" fill="currentColor" stroke="none"/></svg>',
+    back: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 3 2.4 8 7 13M2.6 8H14"/></svg>',
+    info: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.2v4.1"/><circle cx="8" cy="4.9" r=".8" fill="currentColor" stroke="none"/></svg>',
+    filter: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.8 3h12.4L9.4 8.6v4.3l-2.8 1.4V8.6z"/></svg>',
+    refresh: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M13.4 7A5.5 5.5 0 1 0 13 10.4"/><path d="M13.6 6.9h-3M13.2 10.6h-3.1"/></svg>',
+    share: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M9.4 2.4H13.6V6.6"/><path d="M13.6 2.4 8.2 7.8"/><path d="M12.6 9.5v3.4a.9.9 0 0 1-.9.9H3.2a.9.9 0 0 1-.9-.9V4.4a.9.9 0 0 1 .9-.9h3.4"/></svg>',
+    attach: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M11.2 7.5 7.1 11.6a2.4 2.4 0 0 1-3.4-3.4l4.6-4.6a1.6 1.6 0 0 1 2.3 2.3l-4.6 4.6a.8.8 0 0 1-1.2-1.1l4.2-4.2"/></svg>',
+    save: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M2.2 2.2h8.9l2.7 2.7v8.9H2.2z"/><path d="M5 2.4v3.9h5.4V2.4M4.6 13.6V9.1h6.8v4.5"/></svg>',
+    chart: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2.2 13.4V6.5M6.7 13.4V2.6M11.2 13.4V8.8"/><path d="M1 14.4h14"/></svg>',
+    home: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2.6 8 9 2.6 15.4 8"/><path d="M4.2 7.4v7.2h9.6V7.4"/></svg>',
+    star: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m9 2.4 2 4.2 4.6.6-3.3 3.2.8 4.6L9 12.8l-4.1 2.2.8-4.6L2.4 7.2l4.6-.6z"/></svg>',
+    clock: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="9" cy="9" r="6.6"/><path d="M9 5.2V9.2l2.7 1.6"/></svg>',
+    grid: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.6" y="2.6" width="12.8" height="12.8" rx="1"/><path d="M2.6 6.6h12.8M6.6 6.6v8.8"/></svg>',
+    list: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 4.6h9.4M6 9h9.4M6 13.4h9.4"/><circle cx="3.1" cy="4.6" r=".9" fill="currentColor" stroke="none"/><circle cx="3.1" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="3.1" cy="13.4" r=".9" fill="currentColor" stroke="none"/></svg>',
+    burger: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.6 4.6h12.8M2.6 9h12.8M2.6 13.4h12.8"/></svg>',
+    chevD: '<svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3.6 5.8 4.4 4.4 4.4-4.4"/></svg>',
+    chevU: '<svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3.6 10.2 4.4-4.4 4.4 4.4"/></svg>',
+    caret: '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="m4 6 4 4.4L12 6z"/></svg>',
+    ok: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#107C10" stroke-width="1.9"><path d="m2.8 8.6 3.2 3.2 7.2-7.6"/></svg>',
+    warn: '<svg width="13" height="13" viewBox="0 0 16 16" fill="#F2A20C"><path d="M8 2 15 14H1z"/></svg>',
+    bar: '<svg width="13" height="13" viewBox="0 0 16 16" fill="#F2A20C"><rect x="6.4" y="2" width="3.2" height="9" rx=".6"/><rect x="6.4" y="12.4" width="3.2" height="2.4" rx=".6"/></svg>',
+    diamond: '<svg width="13" height="13" viewBox="0 0 16 16" fill="#C50F1F"><path d="M8 1.6 14.4 8 8 14.4 1.6 8z"/></svg>',
+    ex: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#C50F1F" stroke-width="2"><path d="M3.4 3.4 12.6 12.6M12.6 3.4 3.4 12.6"/></svg>',
+  };
+
+  /* ---------------- state ---------------- */
+  const state = {
+    view: "customers",          // "customers" | "transactions" | "options"
+    returnView: "customers",    // where the back arrow goes from User options
+    optTab: "Visual",
+    savedMsg: "",
+    accountFilter: null,        // set when drilling in from a customer row
+    selCustomer: CUSTOMERS[0] ? CUSTOMERS[0].account : null,
+    selTxn: null,
+    query: "",
+    field: "All",
+    sort: {customers: {key: "account", dir: 1}, transactions: {key: "account", dir: 1}},
+    collapsed: {},
+  };
+
+  /* ---------------- data selectors ---------------- */
+  const FIELDS = {
+    customers: {
+      "All": r => [r.account, r.name, r.group].join(" "),
+      "Customer account": r => r.account,
+      "Name": r => r.name,
+      "Customer group": r => r.group,
+    },
+    transactions: {
+      "All": r => [r.account, r.name, r.voucher, r.invoice, r.type].join(" "),
+      "Customer account": r => r.account,
+      "Name": r => r.name,
+      "Voucher": r => r.voucher,
+      "Invoice": r => r.invoice,
+      "Transaction type": r => r.type,
+    },
+  };
+
+  function rows() {
+    const isC = state.view === "customers";
+    let data = isC ? CUSTOMERS.slice() : TRANSACTIONS.slice();
+    if (!isC && state.accountFilter) data = data.filter(t => t.account === state.accountFilter);
+
+    const q = state.query.trim().toLowerCase();
+    if (q) {
+      const map = FIELDS[state.view];
+      const get = map[state.field] || map["All"];
+      data = data.filter(r => String(get(r)).toLowerCase().includes(q));
+    }
+    const s = state.sort[state.view];
+    data.sort((a, b) => {
+      const x = a[s.key], y = b[s.key];
+      const c = (typeof x === "number" && typeof y === "number")
+        ? x - y : String(x).localeCompare(String(y), undefined, {numeric: true});
+      return c * s.dir;
+    });
+    return data;
+  }
+
+  /* ---------------- pieces ---------------- */
+  function gauge(pct, color) {
+    const r = 24, cx = 31, cy = 32, f = Math.max(0, Math.min(1, pct / 100));
+    const a = Math.PI - Math.PI * f;
+    const x = (cx + r * Math.cos(a)).toFixed(2), y = (cy - r * Math.sin(a)).toFixed(2);
+    const val = f > 0.002
+      ? `<path d="M${cx - r} ${cy} A${r} ${r} 0 0 1 ${x} ${y}" fill="none" stroke="${color}" stroke-width="7"/>`
+      : "";
+    return `<svg width="62" height="42" viewBox="0 0 62 42" style="margin:0 auto">
+      <path d="M${cx - r} ${cy} A${r} ${r} 0 0 1 ${cx + r} ${cy}" fill="none" stroke="var(--track)" stroke-width="7"/>
+      ${val}
+      <text x="31" y="30" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--txt)"
+            font-family="var(--font)">${pct}%</text></svg>`;
+  }
+
+  function bar(label, amount, pct, color) {
+    return `<div class="bar"><div class="top"><span class="bl">${label}</span></div>
+      <div class="top"><span class="bv">${money(amount)}</span><span class="bp">${pct}%</span></div>
+      <div class="track"><div class="fill" style="width:${Math.max(0, Math.min(100, pct))}%;background:${color}"></div></div></div>`;
+  }
+
+  function kv(k, v, warn) {
+    return `<div class="kv"><div class="k">${esc(k)}</div><div class="v${warn ? " warn" : ""}">${v}</div></div>`;
+  }
+
+  function card(id, title, bodyHtml, startCollapsed) {
+    if (state.collapsed[id] === undefined) state.collapsed[id] = !!startCollapsed;
+    const c = state.collapsed[id];
+    return `<section class="card${c ? " collapsed" : ""}"><header data-card="${id}">
+      <h3>${esc(title)}</h3>${c ? I.chevD : I.chevU}</header>
+      <div class="cbody">${bodyHtml}</div></section>`;
+  }
+
+  const AGE_ICONS = {"Current": I.ok, "30 days": I.warn, "60 days": I.bar,
+                     "90 days": I.diamond, "180 and over": I.ex};
+
+  function agedCard(c, startCollapsed) {
+    const rowsHtml = Object.keys(AGE_ICONS).map(k =>
+      `<div class="agedrow"><span class="k">${k}</span><span class="ic">${AGE_ICONS[k]}</span>
+       <span class="v">${money(c.aged[k])}</span></div>`).join("");
+    return card(`aged-${state.view}`, `Aged balances - ${fmtDate(cfg.asOfDate)}`, `
+      <div class="selectrow"><label>Aging period definition</label>
+        <select><option>${esc(settings.agingDefinition)}</option></select></div>
+      <div class="aged">${rowsHtml}
+        <div class="agedrow total"><span class="k">Balance (${esc(c.currency)})</span>
+          <span class="ic"></span><span class="v">${money(c.balance)}</span></div>
+      </div>`, startCollapsed);
+  }
+
+  function detailsCard(c, startCollapsed) {
+    return card(`details-${state.view}`, "Customer details", `<div class="details">
+      <div class="dname">${esc(c.name)}</div>
+      <div class="dacct">${esc(c.account)}</div>
+      <div class="daddr">${esc(c.address)}</div></div>`, startCollapsed);
+  }
+
+  function insightsCard(c, title) {
+    return card(`insights-${state.view}`, title, [
+      kv("Open invoices", c.openInvoices),
+      kv("Late invoices", c.lateInvoices, c.lateInvoices > 0),
+      kv("Open collection cases", c.collectionCases, c.collectionCases > 0),
+      kv("Open activities", c.openActivities),
+      kv("Last payment amount", money(c.lastPaymentAmount)),
+      kv("Last payment date", fmtDate(c.lastPaymentDate)),
+      kv("Balance", money(c.balance)),
+      kv("Average invoice balance", money(c.avgInvoiceBalance)),
+      kv("Average amount late", money(c.avgAmountLate)),
+      kv("Average days to pay", c.avgDaysToPay),
+    ].join(""));
+  }
+
+  /* ---------------- FactBox ---------------- */
+  function factbox() {
+    const c = byAccount[state.selCustomer];
+    if (!c) return `<aside class="factbox"><div class="fbtitle">Related information</div></aside>`;
+
+    let cards;
+    if (state.view === "customers") {
+      const predictions = card("pred-c", "Payment predictions (preview)", `
+        <div class="bars">
+          ${bar("On time", c.onTimeAmt, c.onTime, "var(--ontime)")}
+          ${bar("Late", c.lateAmt, c.late, "var(--late)")}
+          ${bar("Very late", c.veryLateAmt, c.veryLate, "var(--verylate)")}
+        </div>
+        <div class="openamt"><span class="lbl">Open amount</span>
+          <span><span class="val">${money(c.balance)}</span><span class="cur">${esc(c.currency)}</span></span></div>
+        <div class="factors"><div class="h">Top factors</div>
+          ${c.factors.map(f => `<a>${esc(f)}</a>`).join("")}</div>`);
+
+      const credit = card("credit", "Credit limit", [
+        kv("Credit limit", money(c.creditLimit)),
+        kv("Balance", money(c.balance)),
+        kv("Credit used", c.creditUsedPct + "%", c.creditUsedPct > 85),
+        `<div class="bar" style="margin-top:10px"><div class="track">
+           <div class="fill" style="width:${Math.min(100, c.creditUsedPct)}%;background:${c.creditUsedPct > 85 ? "var(--verylate)" : "var(--ontime)"}"></div>
+         </div></div>`,
+      ].join(""), true);
+
+      const history = card("history", "Customer history", [
+        kv("Payment terms", esc(c.terms)),
+        kv("Customer group", esc(c.group)),
+        kv("Average days to pay", c.avgDaysToPay),
+        kv("Last payment amount", money(c.lastPaymentAmount)),
+        kv("Last payment date", fmtDate(c.lastPaymentDate)),
+      ].join(""), true);
+
+      cards = predictions + insightsCard(c, "Customer payment predictions (preview)")
+            + credit + history + agedCard(c, false) + detailsCard(c, false);
+    } else {
+      const t = TRANSACTIONS.find(x => x.voucher === state.selTxn)
+             || TRANSACTIONS.find(x => x.account === c.account);
+      const pred = t ? card("pred-t", "Payment prediction (preview)", `
+        <div class="balrow"><span class="lbl">Balance</span>
+          <span><span class="val">${money(t.balance)}</span><span class="cur">${esc(t.currency)}</span></span></div>
+        <div class="gauges">
+          <div class="gauge">${gauge(t.onTime, "var(--ontime)")}<div class="glbl">On time</div></div>
+          <div class="gauge">${gauge(t.late, "var(--late)")}<div class="glbl">Late</div></div>
+          <div class="gauge">${gauge(t.veryLate, "var(--verylate)")}<div class="glbl">Very late</div></div>
+        </div>
+        <div class="factors"><div class="h">Top factors</div>
+          ${c.factors.map(f => `<a>${esc(f)}</a>`).join("")}</div>`)
+        : "";
+      cards = pred + insightsCard(c, "Customer insights (preview)")
+            + agedCard(c, true) + detailsCard(c, true);
+    }
+    return `<aside class="factbox"><div class="fbtitle">Related information</div>${cards}</aside>`;
+  }
+
+  /* ---------------- grid ---------------- */
+  const COLS = {
+    customers: [
+      {k: "account", t: "Customer account", w: "150px"},
+      {k: "name", t: "Name", w: "auto"},
+      {k: "balance", t: "Balance", w: "120px", num: 1},
+      {k: "currency", t: "Currency", w: "80px"},
+      {k: "onTime", t: "On time", w: "110px", num: 1},
+      {k: "late", t: "Late", w: "110px", num: 1},
+      {k: "veryLate", t: "Very late", w: "110px", num: 1},
+    ],
+    transactions: [
+      {k: "account", t: "Customer account", w: "120px"},
+      {k: "name", t: "Name", w: "200px"},
+      {k: "onTime", t: "On time probability", w: "130px", num: 1},
+      {k: "voucher", t: "Voucher", w: "116px"},
+      {k: "invoice", t: "Invoice", w: "106px"},
+      {k: "type", t: "Transaction type", w: "122px"},
+      {k: "date", t: "Date", w: "86px"},
+      {k: "due", t: "Due date", w: "90px"},
+      {k: "amount", t: "Amount in transaction currency", w: "118px", num: 1},
+      {k: "balance", t: "Balance", w: "104px", num: 1},
+      {k: "currency", t: "Currency", w: "72px"},
+    ],
+  };
+
+  /* Keep the FactBox locked to whatever row is actually highlighted. Sorting
+     and filtering can push the previous selection out of view, so re-point at
+     the first visible row whenever that happens. */
+  function normalizeSelection(data) {
+    if (!data.length) return;
+    if (state.view === "customers") {
+      if (!data.some(r => r.account === state.selCustomer)) state.selCustomer = data[0].account;
+    } else {
+      if (!data.some(r => r.voucher === state.selTxn)) state.selTxn = data[0].voucher;
+      const t = TRANSACTIONS.find(x => x.voucher === state.selTxn);
+      if (t) state.selCustomer = t.account;
+    }
+  }
+
+  function cellHtml(r, col) {
+    const v = r[col.k];
+    switch (col.k) {
+      case "account":
+        return `<span class="lnk">${esc(v)}</span>`;
+      case "name":
+        return state.view === "transactions" ? `<span class="lnk">${esc(v)}</span>` : esc(v);
+      case "invoice":
+      case "voucher":
+        return state.view === "transactions" ? `<span class="lnk">${esc(v)}</span>` : esc(v);
+      case "onTime":
+        return `<span class="pcell">${v}%${v < settings.redDotThreshold ? '<span class="dot"></span>' : '<span class="dot" style="background:transparent"></span>'}</span>`;
+      case "late":
+      case "veryLate":
+        return v + "%";
+      case "balance":
+      case "amount":
+        return money(v);
+      case "date":
+      case "due":
+        return fmtDate(v);
+      default:
+        return esc(v);
+    }
+  }
+
+  function grid(data) {
+    const cols = COLS[state.view];
+    const s = state.sort[state.view];
+    const selKey = state.view === "customers" ? state.selCustomer : state.selTxn;
+
+    const head = cols.map(c =>
+      `<th data-sort="${c.k}" class="${c.num ? "num" : ""}" style="width:${c.w}">${esc(c.t)}` +
+      (s.key === c.k ? `<span class="sort">${s.dir > 0 ? "↑" : "↓"}</span>` : "") + `</th>`).join("");
+
+    const body = data.length ? data.map(r => {
+      const id = state.view === "customers" ? r.account : r.voucher;
+      return `<tr data-id="${esc(id)}" data-acct="${esc(r.account)}" class="${id === selKey ? "sel" : ""}">` +
+        cols.map(c => `<td class="${c.num ? "num" : ""}">${cellHtml(r, c)}</td>`).join("") + `</tr>`;
+    }).join("")
+      : `<tr><td colspan="${cols.length}" class="empty">No records match the current filter.</td></tr>`;
+
+    return `<div class="gridwrap"><table class="${state.view}"><thead><tr>${head}</tr></thead>
+      <tbody>${body}</tbody></table></div>`;
+  }
+
+  /* ---------------- page chrome ---------------- */
+  function actionpane() {
+    if (state.view === "options") {
+      return `<div class="actionpane">
+        <button class="apbtn" data-go="back" title="Back">${I.back}</button>
+        <button class="apbtn" id="optsave">${I.save}<span>Save</span></button>
+        <button class="apbtn">Usage data</button>
+        <button class="apbtn">Personalization</button>
+        <button class="apbtn" id="optreset" title="Discard local changes and reload the workbook defaults">Options</button>
+        <button class="apbtn">${I.search}</button></div>`;
+    }
+    const left = state.view === "customers"
+      ? `<button class="apbtn info">${I.info}<span>About payment predictions</span></button>
+         <div class="apsep"></div>
+         <button class="apbtn">Customer</button>
+         <button class="apbtn" data-go="transactions" title="Transactions predicted to be paid late">Collect</button>
+         <button class="apbtn">General</button>
+         <button class="apbtn">Options</button>`
+      : `<button class="apbtn">Vouchers</button>
+         <button class="apbtn" data-go="customers">Transactions</button>
+         <button class="apbtn">Options</button>`;
+    return `<div class="actionpane">
+      <button class="apbtn" data-go="${state.view === "customers" ? "customers" : "customers"}" title="Back">${I.back}</button>
+      ${left}
+      <button class="apbtn">${I.search}</button>
+      <div class="apright">
+        <button title="Attachments">${I.attach}</button>
+        <button title="Analytics">${I.chart}</button>
+        <button title="Notifications" style="position:relative">${I.bell}<span class="badge">1</span></button>
+        <button title="Refresh">${I.refresh}</button>
+        <button title="Open in new window">${I.share}</button>
+      </div></div>`;
+  }
+
+  function header() {
+    const chip = [settings.legalEntity, settings.organization].filter(Boolean).join(" | ");
+    const who = [settings.userName, settings.userEmail].filter(Boolean).join(" - ");
+    return `<header class="topbar">
+      <button class="waffle">${I.waffle}</button>
+      <span class="brand">Finance and Operations</span>
+      <div class="tsearch">${I.search}<input placeholder="Search for a page" aria-label="Search for a page"></div>
+      <div class="tbright">
+        <span class="lechip">${esc(chip)}</span>
+        <button class="tb-ico">${I.bell}</button>
+        <button class="tb-ico" id="gotoptions" title="Settings">${I.gear}</button>
+        <button class="tb-ico">${I.help}</button>
+        <div class="avatar" id="gotoptions2" title="${esc(who)}">${esc(initials())}</div>
+      </div></header>`;
+  }
+
+  function rail() {
+    return `<nav class="rail">
+      <button>${I.burger}</button><button class="on">${I.home}</button><button>${I.star}</button>
+      <button>${I.clock}</button><button>${I.grid}</button><button>${I.list}</button></nav>`;
+  }
+
+  function page(data) {
+    const isC = state.view === "customers";
+    const fieldOpts = Object.keys(FIELDS[state.view])
+      .map(f => `<option${f === state.field ? " selected" : ""}>${f}</option>`).join("");
+
+    const crumb = isC ? "Payment predictions per customer"
+      : "Transactions predicted to be paid late (preview)"
+        + (state.accountFilter ? " - " + esc(byAccount[state.accountFilter].name) : "");
+    const title = isC ? "Standard view" : "All transactions";
+
+    return `<div class="page">
+      <div class="crumb">${crumb}</div>
+      <div class="vtitle"><button>${esc(title)} ${I.caret}</button></div>
+      <div class="filters">
+        <div class="fbox">${I.search}<input id="q" placeholder="Filter" value="${esc(state.query)}"></div>
+        <select class="fsel" id="field">${fieldOpts}</select>
+        <span class="rescount">${data.length} record${data.length === 1 ? "" : "s"}</span>
+      </div>
+      ${grid(data)}</div>`;
+  }
+
+  /* ---------------- User options page ----------------
+     Mirrors D365 F&O: System settings > User options, with the same four
+     sections and the same colour-theme / element-size controls. */
+  const OPT_TABS = ["Visual", "Preferences", "Account", "Workflow"];
+
+  function optVisual() {
+    const swatches = THEMES.map(t =>
+      `<button class="swatch${t.key === settings.theme ? " on" : ""}${t.hc ? " hc" : ""}"
+         data-theme="${t.key}" title="${esc(t.label)}" aria-label="${esc(t.label)}"
+         ${t.hc ? "" : `style="background:${t.hdr}"`}></button>`).join("");
+
+    const tile = (key, rows, cols, label) => {
+      const cells = Array.from({length: rows * cols}, () => "<i></i>").join("");
+      return `<button class="sizetile${settings.size === key ? " on" : ""}" data-size="${key}"
+        title="${label}" aria-label="${label}"><span class="sthdr"></span>
+        <span class="stgrid" style="grid-template-columns:repeat(${cols},1fr);
+          grid-template-rows:repeat(${rows},1fr)">${cells}</span></button>`;
+    };
+
+    return `<h2>Choose color theme and the size of elements</h2>
+      <div class="optlabel">Color theme</div>
+      <div class="swatches">${swatches}</div>
+      <div class="optlabel">Size</div>
+      <div class="sizetiles">${tile("comfortable", 5, 7, "Comfortable")}${tile("compact", 7, 9, "Compact")}</div>`;
+  }
+
+  function field(key, label, hint, disabled) {
+    return `<div class="optfield"><label for="opt-${key}">${esc(label)}</label>
+      <input id="opt-${key}" data-field="${key}" value="${esc(settings[key])}"
+        ${disabled ? "disabled" : ""}>
+      ${hint ? `<div class="hint">${esc(hint)}</div>` : ""}</div>`;
+  }
+
+  function optAccount() {
+    return `<h2>Identify yourself and the legal entity you are working in</h2>
+      <div class="optfields">
+        ${field("legalEntity", "Legal entity ID", "Shown in the header chip, e.g. SBN or USMF")}
+        ${field("organization", "Legal entity name", "The long name shown next to the ID")}
+        ${field("userName", "User name", "Shown on hover over your avatar")}
+        ${field("userInitials", "Initials", "Leave blank to derive them from the user name")}
+        ${field("userEmail", "Email", "Display only")}
+      </div>
+      <div class="optnote">This page sets the demo persona shown in the interface. It does not
+        collect or store a password &mdash; there is nothing to sign in to. The dashboard runs
+        entirely in your browser and holds no connection to a live environment.</div>`;
+  }
+
+  function optPreferences() {
+    return `<h2>Set the preferences that apply to this demo</h2>
+      <div class="optfields">
+        ${field("demoName", "Demo name", "Your own label for this scenario")}
+        ${field("agingDefinition", "Aging period definition", "Shown in the Aged balances pane")}
+        ${field("redDotThreshold", "At-risk threshold (%)",
+                "On-time probability below this shows the red risk indicator")}
+        <div class="optfield"><label>Currency</label>
+          <input value="${esc(cfg.currency)}" disabled>
+          <div class="hint">Set in the workbook &mdash; changing it here would not re-cost the data</div></div>
+        <div class="optfield"><label>As of date</label>
+          <input value="${fmtDate(cfg.asOfDate)}" disabled>
+          <div class="hint">Set in the workbook &mdash; the aging buckets are calculated from it</div></div>
+      </div>
+      <div class="optnote">All figures in this dashboard are synthetic, generated from
+        data/PaymentPrediction-Demo.xlsx for demonstration purposes. This is not a live
+        Dynamics 365 environment and contains no real customer data.</div>`;
+  }
+
+  function optWorkflow() {
+    const ck = (key, label) => `<label class="optcheck"><input type="checkbox" data-check="${key}"
+      ${settings[key] ? "checked" : ""}> ${esc(label)}</label>`;
+    return `<h2>Choose how you are notified about work assigned to you</h2>
+      <div class="optfields">
+        ${ck("notifyActionCenter", "Send notifications to the Action center")}
+        ${ck("notifyEmail", "Send notifications in email")}
+      </div>`;
+  }
+
+  function optionsPage() {
+    const nav = OPT_TABS.map(t =>
+      `<button class="${t === state.optTab ? "on" : ""}" data-opttab="${t}">${t}</button>`).join("");
+    const body = state.optTab === "Visual" ? optVisual()
+      : state.optTab === "Preferences" ? optPreferences()
+      : state.optTab === "Account" ? optAccount()
+      : optWorkflow();
+    const saved = state.savedMsg
+      ? `<div class="msgbar">${I.ok}<span>${esc(state.savedMsg)}</span></div>` : "";
+
+    return `<div class="optpage">
+      <div class="vtitle"><button style="font-size:13px;font-weight:400;color:var(--txt2)">
+        Standard view ${I.caret}</button></div>
+      <h1>User options</h1>
+      ${saved}
+      <div class="optlayout"><nav class="optnav">${nav}</nav>
+        <div class="optbody">${body}</div></div></div>`;
+  }
+
+  /* ---------------- deep links ----------------
+     #customers                  the per-customer list
+     #transactions               all transactions predicted to be paid late
+     #transactions/CON-3005      drilled into one customer
+     Bookmark these to open the demo on the exact screen you want.        */
+  function applyHash() {
+    const [view, acct] = decodeURIComponent(location.hash.replace(/^#/, "")).split("/");
+    if (view === "options") {
+      state.view = "options";
+      if (OPT_TABS.includes(acct)) state.optTab = acct;
+    } else if (view === "transactions") {
+      state.view = "transactions";
+      state.accountFilter = byAccount[acct] ? acct : null;
+      const first = TRANSACTIONS.find(t => !state.accountFilter || t.account === state.accountFilter);
+      if (first) { state.selTxn = first.voucher; state.selCustomer = first.account; }
+    } else {
+      state.view = "customers";
+      state.accountFilter = null;
+    }
+  }
+
+  function syncHash() {
+    const h = state.view === "options" ? "#options/" + state.optTab
+      : state.view === "customers" ? "#customers"
+      : "#transactions" + (state.accountFilter ? "/" + state.accountFilter : "");
+    if (location.hash !== h) history.replaceState(null, "", h);
+  }
+
+  function render() {
+    applyAppearance();
+
+    let main, strip = "";
+    if (state.view === "options") {
+      main = `<main class="main">${actionpane()}
+        <div class="content">${optionsPage()}</div></main>`;
+    } else {
+      const data = rows();
+      normalizeSelection(data);
+      main = `<main class="main">${actionpane()}
+        <div class="content">${page(data)}${factbox()}</div></main>`;
+      strip = `<div class="rstrip">
+        <button title="Filters">${I.filter}</button>
+        <button class="on" title="Related information">${I.info}</button></div>`;
+    }
+
+    document.getElementById("root").innerHTML = `<div class="shell">
+      ${header()}
+      <div class="body">${rail()}${main}${strip}</div></div>`;
+    syncHash();
+    wire();
+  }
+
+  /* ---------------- events ---------------- */
+  function drill(account) {
+    state.view = "transactions";
+    state.accountFilter = account;
+    state.selCustomer = account;
+    const first = TRANSACTIONS.find(t => t.account === account);
+    state.selTxn = first ? first.voucher : null;
+    state.query = ""; state.field = "All";
+    render();
+  }
+
+  function openOptions() {
+    if (state.view !== "options") state.returnView = state.view;
+    state.view = "options";
+    state.savedMsg = "";
+    render();
+  }
+
+  function wireOptions() {
+    const back = document.querySelector('[data-go="back"]');
+    if (back) back.addEventListener("click", () => {
+      state.view = state.returnView; state.savedMsg = ""; render();
+    });
+
+    document.querySelectorAll("[data-opttab]").forEach(b => b.addEventListener("click", () => {
+      state.optTab = b.dataset.opttab; state.savedMsg = ""; render();
+    }));
+
+    // D365 applies a theme the moment you pick it, before you save.
+    document.querySelectorAll("[data-theme]").forEach(b => b.addEventListener("click", () => {
+      settings.theme = b.dataset.theme; state.savedMsg = ""; render();
+    }));
+    document.querySelectorAll("[data-size]").forEach(b => b.addEventListener("click", () => {
+      settings.size = b.dataset.size; state.savedMsg = ""; render();
+    }));
+
+    document.querySelectorAll("[data-field]").forEach(inp => {
+      inp.addEventListener("input", e => {
+        const k = e.target.dataset.field;
+        settings[k] = k === "redDotThreshold"
+          ? (parseInt(e.target.value, 10) || 0)
+          : e.target.value;
+        // Live-update the header chip without stealing focus from the field.
+        const chip = document.querySelector(".lechip");
+        if (chip) chip.textContent = [settings.legalEntity, settings.organization]
+          .filter(Boolean).join(" | ");
+        const av = document.querySelector(".avatar");
+        if (av) av.textContent = initials();
+      });
+    });
+
+    document.querySelectorAll("[data-check]").forEach(c => c.addEventListener("change", e => {
+      settings[e.target.dataset.check] = e.target.checked;
+    }));
+
+    const save = document.getElementById("optsave");
+    if (save) save.addEventListener("click", () => {
+      state.savedMsg = writeStored(settings)
+        ? "Your changes have been saved and will be applied the next time this page is opened."
+        : "Changes applied for this session. This browser blocked local storage, so they will "
+          + "not persist after a reload.";
+      render();
+    });
+
+    const reset = document.getElementById("optreset");
+    if (reset) reset.addEventListener("click", () => {
+      try { localStorage.removeItem(SKEY); } catch (e) { /* nothing to clear */ }
+      settings = Object.assign({}, DEFAULTS);
+      state.savedMsg = "Reset to the defaults held in the workbook.";
+      render();
+    });
+  }
+
+  function wire() {
+    document.querySelectorAll("#gotoptions, #gotoptions2")
+      .forEach(b => b.addEventListener("click", openOptions));
+
+    if (state.view === "options") { wireOptions(); return; }
+
+    const q = document.getElementById("q");
+    if (q) {
+      q.addEventListener("input", e => {
+        state.query = e.target.value;
+        const pos = e.target.selectionStart;
+        render();
+        const nq = document.getElementById("q");
+        nq.focus(); nq.setSelectionRange(pos, pos);
+      });
+    }
+    const f = document.getElementById("field");
+    if (f) f.addEventListener("change", e => { state.field = e.target.value; render(); });
+
+    document.querySelectorAll("[data-sort]").forEach(th => th.addEventListener("click", () => {
+      const s = state.sort[state.view], k = th.dataset.sort;
+      if (s.key === k) s.dir *= -1; else { s.key = k; s.dir = 1; }
+      render();
+    }));
+
+    document.querySelectorAll("tbody tr[data-id]").forEach(tr => {
+      tr.addEventListener("click", () => {
+        if (state.view === "customers") state.selCustomer = tr.dataset.id;
+        else { state.selTxn = tr.dataset.id; state.selCustomer = tr.dataset.acct; }
+        render();
+      });
+      tr.addEventListener("dblclick", () => {
+        if (state.view === "customers") drill(tr.dataset.acct);
+      });
+    });
+
+    // The customer-account hyperlink drills straight into that customer's
+    // predicted transactions -- same gesture as the real F&O list page.
+    document.querySelectorAll("tbody tr[data-id] td:first-child .lnk").forEach(a =>
+      a.addEventListener("click", e => {
+        e.stopPropagation();
+        const tr = a.closest("tr");
+        if (state.view === "customers") drill(tr.dataset.acct);
+        else { state.selTxn = tr.dataset.id; state.selCustomer = tr.dataset.acct; render(); }
+      }));
+
+    document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
+      const go = b.dataset.go;
+      if (go === "transactions") {
+        state.view = "transactions";
+        state.accountFilter = null;
+        const first = TRANSACTIONS.find(t => t.account === state.selCustomer) || TRANSACTIONS[0];
+        state.selTxn = first ? first.voucher : null;
+        if (first) state.selCustomer = first.account;
+      } else {
+        state.view = "customers";
+        state.accountFilter = null;
+      }
+      state.query = ""; state.field = "All";
+      render();
+    }));
+
+    document.querySelectorAll("[data-card]").forEach(h => h.addEventListener("click", () => {
+      const id = h.dataset.card;
+      state.collapsed[id] = !state.collapsed[id];
+      render();
+    }));
+
+    const x = document.getElementById("closeflag");
+    if (x) x.addEventListener("click", () => { state.flag = false; render(); });
+  }
+
+  window.addEventListener("hashchange", () => { applyHash(); render(); });
+  applyHash();
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment predictions per customer | Finance and Operations</title>
+<style>
+:root{
+  --hdr:#8E2A26; --hdr-hi:#A33A34; --accent:#8E2A26; --sel:#F7E9E8; --sel-bar:#8E2A26;
+  --link:#0F6CBD; --txt:#242424; --txt2:#605E5C; --txt3:#8A8886;
+  --line:#E1DFDD; --line2:#EDEBE9; --bg:#FAF9F8; --white:#FFF;
+  --ontime:#107C10; --late:#E36C0A; --verylate:#C50F1F; --track:#E1DFDD; --dot:#C50F1F;
+  --font:"Segoe UI","Segoe UI Web (West European)",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+}
+/* --hdr / --hdr-hi / --accent / --sel / --sel-bar are set at runtime by
+   applyAppearance() from the chosen colour theme. */
+html[data-contrast="high"]{
+  --link:#0000EE; --txt:#000; --txt2:#000; --txt3:#000;
+  --line:#000; --line2:#000; --bg:#FFF; --sel:#D9D9D9;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font);font-size:13px;color:var(--txt);background:var(--bg);
+     -webkit-font-smoothing:antialiased;overflow:hidden}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+svg{display:block}
+.shell{display:flex;flex-direction:column;height:100vh}
+
+/* ---------- top command bar ---------- */
+.topbar{height:48px;flex:0 0 48px;background:var(--hdr);display:flex;align-items:center;
+        gap:4px;padding:0 8px 0 4px;color:#fff}
+.topbar .waffle{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:2px}
+.topbar .waffle:hover,.tb-ico:hover{background:rgba(255,255,255,.14)}
+.brand{font-size:15px;font-weight:600;margin-left:4px;white-space:nowrap}
+.tsearch{flex:0 1 520px;margin:0 auto;height:30px;background:rgba(255,255,255,.16);border-radius:2px;
+         display:flex;align-items:center;gap:8px;padding:0 10px;color:#fff}
+.tsearch input{background:none;border:0;outline:0;color:#fff;font:inherit;font-size:12px;width:100%}
+.tsearch input::placeholder{color:rgba(255,255,255,.85)}
+.tbright{display:flex;align-items:center;gap:2px;margin-left:auto}
+.lechip{border:1px solid rgba(255,255,255,.6);border-radius:2px;padding:3px 8px;font-size:11px;
+        font-weight:600;white-space:nowrap;margin-right:6px}
+.tb-ico{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:2px;position:relative}
+.avatar{width:30px;height:30px;border-radius:50%;background:#C4B5A6;color:#3B3A39;font-size:11px;
+        font-weight:600;display:flex;align-items:center;justify-content:center;margin-left:6px}
+
+.body{flex:1;display:flex;min-height:0}
+
+/* ---------- left icon rail ---------- */
+.rail{flex:0 0 48px;background:var(--white);border-right:1px solid var(--line);
+      display:flex;flex-direction:column;align-items:center;padding-top:6px;gap:2px}
+.rail button{width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+             border-radius:2px;color:var(--txt2)}
+.rail button:hover{background:var(--line2)}
+.rail button.on{color:var(--accent)}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--white)}
+
+/* ---------- action pane ---------- */
+.actionpane{height:44px;flex:0 0 44px;border-bottom:1px solid var(--line);display:flex;
+            align-items:center;gap:2px;padding:0 8px}
+.apbtn{height:32px;padding:0 10px;border-radius:2px;display:flex;align-items:center;gap:6px;
+       font-size:13px;white-space:nowrap}
+.apbtn:hover{background:var(--line2)}
+.apbtn.info{color:var(--txt)}
+.apsep{width:1px;height:20px;background:var(--line);margin:0 6px}
+.apright{margin-left:auto;display:flex;align-items:center;gap:2px}
+.apright button{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+                border-radius:2px;color:var(--txt2)}
+.apright button:hover{background:var(--line2)}
+.badge{position:absolute;top:2px;right:2px;background:var(--verylate);color:#fff;font-size:9px;
+       min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;
+       justify-content:center;padding:0 3px;font-weight:600}
+
+.content{flex:1;display:flex;min-height:0}
+.page{flex:1;display:flex;flex-direction:column;min-width:0;padding:10px 0 0 22px}
+
+.crumb{font-size:12px;color:var(--txt2);margin-bottom:2px}
+.vtitle{display:flex;align-items:center;gap:6px;font-size:24px;font-weight:600;margin:0 0 12px;letter-spacing:-.2px}
+.vtitle button{display:flex;align-items:center;gap:6px;color:inherit}
+
+/* ---------- filter row ---------- */
+.filters{display:flex;gap:10px;margin-bottom:10px;padding-right:22px}
+.fbox{width:220px;height:28px;border:1px solid var(--line);border-radius:2px;display:flex;
+      align-items:center;gap:6px;padding:0 8px;background:var(--white)}
+.fbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.fbox input{border:0;outline:0;font:inherit;font-size:12px;width:100%;background:none}
+.fsel{width:212px;height:28px;border:1px solid var(--line);border-radius:2px;padding:0 8px;
+      font:inherit;font-size:12px;background:var(--white);color:var(--txt)}
+.rescount{margin-left:auto;font-size:12px;color:var(--txt2);align-self:center}
+
+/* ---------- grid ---------- */
+.gridwrap{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;table-layout:fixed}
+table.transactions{min-width:1264px}
+thead th{position:sticky;top:0;z-index:2;background:var(--white);border-bottom:1px solid var(--line);
+         font-size:12px;font-weight:600;color:var(--txt);text-align:left;padding:8px 8px;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;cursor:pointer}
+thead th:hover{background:var(--line2)}
+thead th.num{text-align:right}
+th .sort{color:var(--txt2);font-size:10px;margin-left:3px}
+tbody td{padding:0 8px;height:33px;font-size:13px;border-bottom:1px solid #F5F4F3;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#F5F4F3}
+tbody tr.sel{background:var(--sel)}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--sel-bar)}
+.lnk{color:var(--link)}
+tr:hover .lnk{text-decoration:underline}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dot);
+     margin-left:6px;vertical-align:middle}
+.pcell{display:flex;align-items:center;justify-content:flex-end;gap:0}
+.empty{padding:28px 8px;color:var(--txt2);font-size:13px}
+
+/* ---------- FactBox ---------- */
+.factbox{flex:0 0 286px;border-left:1px solid var(--line);background:var(--bg);
+         overflow-y:auto;padding:10px 10px 40px}
+.fbtitle{font-size:16px;font-weight:600;padding:6px 6px 10px;display:flex;align-items:center;
+         justify-content:space-between}
+.card{background:var(--white);border:1px solid var(--line);margin-bottom:8px}
+.card>header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer}
+.card>header:hover{background:#FAF9F8}
+.card>header h3{margin:0;font-size:14px;font-weight:600}
+.card>header .chev{color:var(--txt2)}
+.card .cbody{padding:0 12px 14px}
+.card.collapsed .cbody{display:none}
+
+.balrow{display:flex;align-items:baseline;justify-content:space-between;padding:2px 0 12px}
+.balrow .lbl{font-size:12px;color:var(--txt2)}
+.balrow .val{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.balrow .cur{font-size:11px;color:var(--txt2);margin-left:5px;font-weight:400}
+
+.gauges{display:flex;justify-content:space-between;gap:4px;border-top:1px solid var(--line2);padding-top:12px}
+.gauge{flex:1;text-align:center}
+.gauge .glbl{font-size:11px;color:var(--txt2);margin-top:1px}
+
+.factors{margin-top:14px;border-top:1px solid var(--line2);padding-top:10px}
+.factors .h{font-size:12px;color:var(--txt2);margin-bottom:6px}
+.factors a{display:block;color:var(--link);font-size:12px;line-height:19px;text-decoration:none;cursor:pointer}
+.factors a:hover{text-decoration:underline}
+
+.bars{display:flex;flex-direction:column;gap:12px;padding-top:2px}
+.bar .top{display:flex;align-items:baseline;justify-content:space-between}
+.bar .bl{font-size:12px;color:var(--txt2)}
+.bar .bv{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.bar .bp{font-size:11px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.bar .track{height:5px;background:var(--track);margin-top:5px;position:relative;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;height:100%}
+.openamt{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line2);
+         margin-top:14px;padding-top:11px}
+.openamt .lbl{font-size:12px;color:var(--txt2)}
+.openamt .val{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.openamt .cur{font-size:11px;color:var(--txt2);margin-left:5px;font-weight:400}
+
+.kv{padding:9px 0 4px;border-bottom:1px solid var(--line2)}
+.kv:last-child{border-bottom:0}
+.kv .k{font-size:12px;color:var(--txt2)}
+.kv .v{font-size:13px;text-align:right;font-variant-numeric:tabular-nums;padding-top:3px;min-height:18px}
+.kv .v.warn{color:var(--verylate);font-weight:600}
+
+.selectrow{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.selectrow label{font-size:12px;color:var(--txt2)}
+.selectrow select{height:28px;border:1px solid var(--line);border-radius:2px;padding:0 6px;
+                  font:inherit;font-size:12px;background:var(--white)}
+.aged{display:flex;flex-direction:column}
+.agedrow{display:flex;align-items:center;gap:8px;padding:5px 0}
+.agedrow .k{font-size:12px;color:var(--txt2);width:82px;flex:0 0 82px}
+.agedrow .ic{width:14px;flex:0 0 14px;display:flex;justify-content:center}
+.agedrow .v{flex:1;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;
+            border-bottom:1px solid var(--line2);padding-bottom:2px}
+.agedrow.total{margin-top:6px;border-top:1px solid var(--line2);padding-top:9px}
+.agedrow.total .k{color:var(--txt);font-weight:600}
+
+.details .dname{font-size:13px;padding-bottom:4px;border-bottom:1px solid var(--line2)}
+.details .dacct{font-size:13px;color:var(--link);padding:9px 0 4px;border-bottom:1px solid var(--line2)}
+.details .daddr{font-size:12px;color:var(--txt2);white-space:pre-line;line-height:18px;padding-top:10px}
+
+/* ---------- right strip ---------- */
+.rstrip{flex:0 0 44px;background:var(--white);border-left:1px solid var(--line);
+        display:flex;flex-direction:column;align-items:center;padding-top:8px;gap:4px}
+.rstrip button{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+               border-radius:2px;color:var(--txt2)}
+.rstrip button:hover{background:var(--line2)}
+.rstrip button.on{color:var(--accent);box-shadow:inset -2px 0 0 var(--accent)}
+
+/* ---------- element size (User options > Visual > Size) ---------- */
+html[data-size="compact"] tbody td{height:26px;font-size:12px}
+html[data-size="compact"] thead th{padding:5px 8px;font-size:11px}
+html[data-size="compact"] .kv{padding:6px 0 3px}
+html[data-size="compact"] .agedrow{padding:3px 0}
+html[data-size="compact"] .card .cbody{padding:0 12px 10px}
+html[data-size="compact"] .card>header{padding:8px 12px}
+
+/* ---------- User options page ---------- */
+.optpage{flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto;padding:10px 0 40px 22px}
+.optpage h1{font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-.2px}
+.optlayout{display:flex;gap:22px;padding-right:22px;align-items:flex-start}
+.optnav{flex:0 0 288px;min-height:430px;background:#F5F4F3;border:1px solid var(--line);padding:4px 0}
+.optnav button{display:block;width:100%;text-align:left;padding:11px 18px;font-size:13px;color:var(--txt)}
+.optnav button:hover{background:#EDEBE9}
+.optnav button.on{background:var(--white);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.optbody{flex:1;min-width:0;padding-top:2px}
+.optbody h2{font-size:15px;font-weight:600;margin:0 0 22px}
+.optlabel{font-size:12px;color:var(--txt2);margin-bottom:8px}
+
+.swatches{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:30px}
+.swatch{width:74px;height:74px;border:1px solid rgba(0,0,0,.12);position:relative;padding:0}
+.swatch.on{outline:2px solid var(--accent);outline-offset:3px}
+.swatch.on::after{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 17px 17px 0;
+                  border-color:transparent rgba(255,255,255,.6) transparent transparent}
+.swatch.hc{background:linear-gradient(to bottom right,#fff 0 49.5%,#000 50.5% 100%)}
+
+.sizetiles{display:flex;gap:22px;margin-bottom:8px}
+.sizetile{width:236px;height:150px;border:1px solid #C8C6C4;background:#fff;padding:0;
+          display:flex;flex-direction:column;position:relative}
+.sizetile.on{outline:2px solid var(--accent);outline-offset:3px}
+.sizetile.on::after{content:"";position:absolute;top:0;right:0;border-style:solid;border-width:0 17px 17px 0;
+                    border-color:transparent rgba(255,255,255,.75) transparent transparent}
+.sthdr{flex:0 0 17px;background:#3B3A39}
+.stgrid{flex:1;display:grid;gap:2px;padding:3px;background:#3B3A39}
+.stgrid i{background:linear-gradient(#F3F2F1,#D2D0CE)}
+
+.optfields{display:flex;flex-direction:column;gap:16px;max-width:430px}
+.optfield label{display:block;font-size:12px;color:var(--txt2);margin-bottom:4px}
+.optfield input{width:100%;height:30px;border:1px solid var(--line);border-radius:2px;
+                padding:0 9px;font:inherit;font-size:13px;background:var(--white);color:var(--txt)}
+.optfield input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.optfield input:disabled{background:#F3F2F1;color:var(--txt2)}
+.optfield .hint{font-size:11px;color:var(--txt3);margin-top:4px}
+.optcheck{display:flex;align-items:center;gap:9px;font-size:13px;padding:3px 0}
+.optcheck input{width:15px;height:15px;accent-color:var(--accent)}
+.optnote{max-width:560px;margin-top:26px;padding-top:14px;border-top:1px solid var(--line2);
+         font-size:11px;color:var(--txt3);line-height:17px}
+
+.msgbar{display:flex;align-items:center;gap:9px;background:#DFF6DD;border:1px solid #A7D8A2;
+        padding:8px 12px;font-size:12px;margin-bottom:16px;max-width:640px}
+html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>const DEMO = __DEMO_DATA__;</script>
+<script>
+(function () {
+  "use strict";
+
+  const cfg = DEMO.config;
+  const CUSTOMERS = DEMO.customers;
+  const TRANSACTIONS = DEMO.transactions;
+  const byAccount = Object.fromEntries(CUSTOMERS.map(c => [c.account, c]));
+
+  /* ---------------- colour themes ----------------
+     The same fifteen themes offered by D365 F&O under
+     User options > Visual > Color theme, in the same order,
+     plus the brick red used by the current RSMUS environment. */
+  const THEMES = [
+    {key: "blue",         label: "Blue",          hdr: "#2B6BD6"},
+    {key: "berry",        label: "Berry",         hdr: "#9E1750"},
+    {key: "orchid",       label: "Orchid",        hdr: "#8C4A9C"},
+    {key: "orange",       label: "Orange",        hdr: "#C4511F"},
+    {key: "green",        label: "Green",         hdr: "#007A1C"},
+    {key: "darkblue",     label: "Dark blue",     hdr: "#1B2151"},
+    {key: "darkpurple",   label: "Dark purple",   hdr: "#40275C"},
+    {key: "azure",        label: "Azure",         hdr: "#0067D5"},
+    {key: "olive",        label: "Olive",         hdr: "#4E7A00"},
+    {key: "pink",         label: "Pink",          hdr: "#C2429B"},
+    {key: "teal",         label: "Teal",          hdr: "#00838F"},
+    {key: "steel",        label: "Steel blue",    hdr: "#005A8C"},
+    {key: "darkred",      label: "Dark red",      hdr: "#7A0000"},
+    {key: "maroon",       label: "Maroon",        hdr: "#3F0000"},
+    {key: "highcontrast", label: "High contrast", hdr: "#000000", hc: true},
+    {key: "red",          label: "Brick red",     hdr: "#8E2A26"},
+  ];
+  const themeByKey = Object.fromEntries(THEMES.map(t => [t.key, t]));
+
+  function mix(hex, other, ratio) {
+    const parse = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const [r1, g1, b1] = parse(hex), [r2, g2, b2] = parse(other);
+    const m = (a, b) => Math.round(a + (b - a) * ratio);
+    return "#" + [m(r1, r2), m(g1, g2), m(b1, b2)]
+      .map(v => v.toString(16).padStart(2, "0")).join("");
+  }
+
+  /* ---------------- settings ----------------
+     Workbook Config is the baseline. Anything changed on the User options
+     page is layered on top and kept in localStorage, so a presenter can
+     retheme or rebrand mid-demo without touching the spreadsheet. */
+  const SKEY = "d365-pp-demo-settings";
+  const DEFAULTS = {
+    theme: cfg.theme || "blue",
+    size: cfg.size || "comfortable",
+    legalEntity: cfg.legalEntity || "",
+    organization: cfg.organization || "",
+    userName: cfg.userName || "Demo User",
+    userInitials: cfg.userInitials || "",
+    userEmail: cfg.userEmail || "",
+    demoName: cfg.demoName || "",
+    agingDefinition: cfg.agingDefinition || "30_60_90_180",
+    redDotThreshold: cfg.redDotThreshold != null ? cfg.redDotThreshold : 60,
+    notifyEmail: false,
+    notifyActionCenter: true,
+  };
+
+  function readStored() {
+    try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch (e) { return {}; }
+  }
+  function writeStored(s) {
+    try { localStorage.setItem(SKEY, JSON.stringify(s)); return true; } catch (e) { return false; }
+  }
+
+  let settings = Object.assign({}, DEFAULTS, readStored());
+
+  function initials() {
+    if (settings.userInitials) return settings.userInitials.slice(0, 2).toUpperCase();
+    const src = settings.userName || settings.organization || "Demo User";
+    return src.split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(w => w[0]).join("").toUpperCase() || "DU";
+  }
+
+  function applyAppearance() {
+    const t = themeByKey[settings.theme] || themeByKey.blue;
+    const r = document.documentElement;
+    r.style.setProperty("--hdr", t.hdr);
+    r.style.setProperty("--hdr-hi", mix(t.hdr, "#FFFFFF", 0.18));
+    r.style.setProperty("--accent", t.hdr);
+    r.style.setProperty("--sel-bar", t.hdr);
+    r.style.setProperty("--sel", mix(t.hdr, "#FFFFFF", 0.90));
+    r.dataset.contrast = t.hc ? "high" : "normal";
+    r.dataset.size = settings.size === "compact" ? "compact" : "comfortable";
+  }
+
+  /* ---------------- formatting ---------------- */
+  const nf = new Intl.NumberFormat("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const money = v => nf.format(v || 0);
+  const fmtDate = iso => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    return `${m}/${d}/${y}`;
+  };
+  const esc = s => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  /* ---------------- icons ---------------- */
+  const I = {
+    waffle: '<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><g><rect x="0" y="0" width="4" height="4" rx=".5"/><rect x="7" y="0" width="4" height="4" rx=".5"/><rect x="14" y="0" width="4" height="4" rx=".5"/><rect x="0" y="7" width="4" height="4" rx=".5"/><rect x="7" y="7" width="4" height="4" rx=".5"/><rect x="14" y="7" width="4" height="4" rx=".5"/><rect x="0" y="14" width="4" height="4" rx=".5"/><rect x="7" y="14" width="4" height="4" rx=".5"/><rect x="14" y="14" width="4" height="4" rx=".5"/></g></svg>',
+    search: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6.6" cy="6.6" r="4.6"/><path d="M10.2 10.2 14 14"/></svg>',
+    bell: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 6.5a4 4 0 0 1 8 0c0 3 .9 4.2 1.4 4.7H2.6C3.1 10.7 4 9.5 4 6.5Z"/><path d="M6.6 13.2a1.6 1.6 0 0 0 2.8 0"/></svg>',
+    gear: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.4v1.8M8 12.8v1.8M14.6 8h-1.8M3.2 8H1.4M12.7 3.3l-1.3 1.3M4.6 11.4l-1.3 1.3M12.7 12.7l-1.3-1.3M4.6 4.6 3.3 3.3"/></svg>',
+    help: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><path d="M6.2 6.1a1.85 1.85 0 1 1 2.3 1.9c-.4.15-.5.5-.5.9v.4"/><circle cx="8" cy="11.6" r=".75" fill="currentColor" stroke="none"/></svg>',
+    back: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 3 2.4 8 7 13M2.6 8H14"/></svg>',
+    info: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.2v4.1"/><circle cx="8" cy="4.9" r=".8" fill="currentColor" stroke="none"/></svg>',
+    filter: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.8 3h12.4L9.4 8.6v4.3l-2.8 1.4V8.6z"/></svg>',
+    refresh: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M13.4 7A5.5 5.5 0 1 0 13 10.4"/><path d="M13.6 6.9h-3M13.2 10.6h-3.1"/></svg>',
+    share: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M9.4 2.4H13.6V6.6"/><path d="M13.6 2.4 8.2 7.8"/><path d="M12.6 9.5v3.4a.9.9 0 0 1-.9.9H3.2a.9.9 0 0 1-.9-.9V4.4a.9.9 0 0 1 .9-.9h3.4"/></svg>',
+    attach: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M11.2 7.5 7.1 11.6a2.4 2.4 0 0 1-3.4-3.4l4.6-4.6a1.6 1.6 0 0 1 2.3 2.3l-4.6 4.6a.8.8 0 0 1-1.2-1.1l4.2-4.2"/></svg>',
+    save: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M2.2 2.2h8.9l2.7 2.7v8.9H2.2z"/><path d="M5 2.4v3.9h5.4V2.4M4.6 13.6V9.1h6.8v4.5"/></svg>',
+    chart: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2.2 13.4V6.5M6.7 13.4V2.6M11.2 13.4V8.8"/><path d="M1 14.4h14"/></svg>',
+    home: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2.6 8 9 2.6 15.4 8"/><path d="M4.2 7.4v7.2h9.6V7.4"/></svg>',
+    star: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m9 2.4 2 4.2 4.6.6-3.3 3.2.8 4.6L9 12.8l-4.1 2.2.8-4.6L2.4 7.2l4.6-.6z"/></svg>',
+    clock: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="9" cy="9" r="6.6"/><path d="M9 5.2V9.2l2.7 1.6"/></svg>',
+    grid: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.6" y="2.6" width="12.8" height="12.8" rx="1"/><path d="M2.6 6.6h12.8M6.6 6.6v8.8"/></svg>',
+    list: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 4.6h9.4M6 9h9.4M6 13.4h9.4"/><circle cx="3.1" cy="4.6" r=".9" fill="currentColor" stroke="none"/><circle cx="3.1" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="3.1" cy="13.4" r=".9" fill="currentColor" stroke="none"/></svg>',
+    burger: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.6 4.6h12.8M2.6 9h12.8M2.6 13.4h12.8"/></svg>',
+    chevD: '<svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3.6 5.8 4.4 4.4 4.4-4.4"/></svg>',
+    chevU: '<svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3.6 10.2 4.4-4.4 4.4 4.4"/></svg>',
+    caret: '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="m4 6 4 4.4L12 6z"/></svg>',
+    ok: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#107C10" stroke-width="1.9"><path d="m2.8 8.6 3.2 3.2 7.2-7.6"/></svg>',
+    warn: '<svg width="13" height="13" viewBox="0 0 16 16" fill="#F2A20C"><path d="M8 2 15 14H1z"/></svg>',
+    bar: '<svg width="13" height="13" viewBox="0 0 16 16" fill="#F2A20C"><rect x="6.4" y="2" width="3.2" height="9" rx=".6"/><rect x="6.4" y="12.4" width="3.2" height="2.4" rx=".6"/></svg>',
+    diamond: '<svg width="13" height="13" viewBox="0 0 16 16" fill="#C50F1F"><path d="M8 1.6 14.4 8 8 14.4 1.6 8z"/></svg>',
+    ex: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#C50F1F" stroke-width="2"><path d="M3.4 3.4 12.6 12.6M12.6 3.4 3.4 12.6"/></svg>',
+  };
+
+  /* ---------------- state ---------------- */
+  const state = {
+    view: "customers",          // "customers" | "transactions" | "options"
+    returnView: "customers",    // where the back arrow goes from User options
+    optTab: "Visual",
+    savedMsg: "",
+    accountFilter: null,        // set when drilling in from a customer row
+    selCustomer: CUSTOMERS[0] ? CUSTOMERS[0].account : null,
+    selTxn: null,
+    query: "",
+    field: "All",
+    sort: {customers: {key: "account", dir: 1}, transactions: {key: "account", dir: 1}},
+    collapsed: {},
+  };
+
+  /* ---------------- data selectors ---------------- */
+  const FIELDS = {
+    customers: {
+      "All": r => [r.account, r.name, r.group].join(" "),
+      "Customer account": r => r.account,
+      "Name": r => r.name,
+      "Customer group": r => r.group,
+    },
+    transactions: {
+      "All": r => [r.account, r.name, r.voucher, r.invoice, r.type].join(" "),
+      "Customer account": r => r.account,
+      "Name": r => r.name,
+      "Voucher": r => r.voucher,
+      "Invoice": r => r.invoice,
+      "Transaction type": r => r.type,
+    },
+  };
+
+  function rows() {
+    const isC = state.view === "customers";
+    let data = isC ? CUSTOMERS.slice() : TRANSACTIONS.slice();
+    if (!isC && state.accountFilter) data = data.filter(t => t.account === state.accountFilter);
+
+    const q = state.query.trim().toLowerCase();
+    if (q) {
+      const map = FIELDS[state.view];
+      const get = map[state.field] || map["All"];
+      data = data.filter(r => String(get(r)).toLowerCase().includes(q));
+    }
+    const s = state.sort[state.view];
+    data.sort((a, b) => {
+      const x = a[s.key], y = b[s.key];
+      const c = (typeof x === "number" && typeof y === "number")
+        ? x - y : String(x).localeCompare(String(y), undefined, {numeric: true});
+      return c * s.dir;
+    });
+    return data;
+  }
+
+  /* ---------------- pieces ---------------- */
+  function gauge(pct, color) {
+    const r = 24, cx = 31, cy = 32, f = Math.max(0, Math.min(1, pct / 100));
+    const a = Math.PI - Math.PI * f;
+    const x = (cx + r * Math.cos(a)).toFixed(2), y = (cy - r * Math.sin(a)).toFixed(2);
+    const val = f > 0.002
+      ? `<path d="M${cx - r} ${cy} A${r} ${r} 0 0 1 ${x} ${y}" fill="none" stroke="${color}" stroke-width="7"/>`
+      : "";
+    return `<svg width="62" height="42" viewBox="0 0 62 42" style="margin:0 auto">
+      <path d="M${cx - r} ${cy} A${r} ${r} 0 0 1 ${cx + r} ${cy}" fill="none" stroke="var(--track)" stroke-width="7"/>
+      ${val}
+      <text x="31" y="30" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--txt)"
+            font-family="var(--font)">${pct}%</text></svg>`;
+  }
+
+  function bar(label, amount, pct, color) {
+    return `<div class="bar"><div class="top"><span class="bl">${label}</span></div>
+      <div class="top"><span class="bv">${money(amount)}</span><span class="bp">${pct}%</span></div>
+      <div class="track"><div class="fill" style="width:${Math.max(0, Math.min(100, pct))}%;background:${color}"></div></div></div>`;
+  }
+
+  function kv(k, v, warn) {
+    return `<div class="kv"><div class="k">${esc(k)}</div><div class="v${warn ? " warn" : ""}">${v}</div></div>`;
+  }
+
+  function card(id, title, bodyHtml, startCollapsed) {
+    if (state.collapsed[id] === undefined) state.collapsed[id] = !!startCollapsed;
+    const c = state.collapsed[id];
+    return `<section class="card${c ? " collapsed" : ""}"><header data-card="${id}">
+      <h3>${esc(title)}</h3>${c ? I.chevD : I.chevU}</header>
+      <div class="cbody">${bodyHtml}</div></section>`;
+  }
+
+  const AGE_ICONS = {"Current": I.ok, "30 days": I.warn, "60 days": I.bar,
+                     "90 days": I.diamond, "180 and over": I.ex};
+
+  function agedCard(c, startCollapsed) {
+    const rowsHtml = Object.keys(AGE_ICONS).map(k =>
+      `<div class="agedrow"><span class="k">${k}</span><span class="ic">${AGE_ICONS[k]}</span>
+       <span class="v">${money(c.aged[k])}</span></div>`).join("");
+    return card(`aged-${state.view}`, `Aged balances - ${fmtDate(cfg.asOfDate)}`, `
+      <div class="selectrow"><label>Aging period definition</label>
+        <select><option>${esc(settings.agingDefinition)}</option></select></div>
+      <div class="aged">${rowsHtml}
+        <div class="agedrow total"><span class="k">Balance (${esc(c.currency)})</span>
+          <span class="ic"></span><span class="v">${money(c.balance)}</span></div>
+      </div>`, startCollapsed);
+  }
+
+  function detailsCard(c, startCollapsed) {
+    return card(`details-${state.view}`, "Customer details", `<div class="details">
+      <div class="dname">${esc(c.name)}</div>
+      <div class="dacct">${esc(c.account)}</div>
+      <div class="daddr">${esc(c.address)}</div></div>`, startCollapsed);
+  }
+
+  function insightsCard(c, title) {
+    return card(`insights-${state.view}`, title, [
+      kv("Open invoices", c.openInvoices),
+      kv("Late invoices", c.lateInvoices, c.lateInvoices > 0),
+      kv("Open collection cases", c.collectionCases, c.collectionCases > 0),
+      kv("Open activities", c.openActivities),
+      kv("Last payment amount", money(c.lastPaymentAmount)),
+      kv("Last payment date", fmtDate(c.lastPaymentDate)),
+      kv("Balance", money(c.balance)),
+      kv("Average invoice balance", money(c.avgInvoiceBalance)),
+      kv("Average amount late", money(c.avgAmountLate)),
+      kv("Average days to pay", c.avgDaysToPay),
+    ].join(""));
+  }
+
+  /* ---------------- FactBox ---------------- */
+  function factbox() {
+    const c = byAccount[state.selCustomer];
+    if (!c) return `<aside class="factbox"><div class="fbtitle">Related information</div></aside>`;
+
+    let cards;
+    if (state.view === "customers") {
+      const predictions = card("pred-c", "Payment predictions (preview)", `
+        <div class="bars">
+          ${bar("On time", c.onTimeAmt, c.onTime, "var(--ontime)")}
+          ${bar("Late", c.lateAmt, c.late, "var(--late)")}
+          ${bar("Very late", c.veryLateAmt, c.veryLate, "var(--verylate)")}
+        </div>
+        <div class="openamt"><span class="lbl">Open amount</span>
+          <span><span class="val">${money(c.balance)}</span><span class="cur">${esc(c.currency)}</span></span></div>
+        <div class="factors"><div class="h">Top factors</div>
+          ${c.factors.map(f => `<a>${esc(f)}</a>`).join("")}</div>`);
+
+      const credit = card("credit", "Credit limit", [
+        kv("Credit limit", money(c.creditLimit)),
+        kv("Balance", money(c.balance)),
+        kv("Credit used", c.creditUsedPct + "%", c.creditUsedPct > 85),
+        `<div class="bar" style="margin-top:10px"><div class="track">
+           <div class="fill" style="width:${Math.min(100, c.creditUsedPct)}%;background:${c.creditUsedPct > 85 ? "var(--verylate)" : "var(--ontime)"}"></div>
+         </div></div>`,
+      ].join(""), true);
+
+      const history = card("history", "Customer history", [
+        kv("Payment terms", esc(c.terms)),
+        kv("Customer group", esc(c.group)),
+        kv("Average days to pay", c.avgDaysToPay),
+        kv("Last payment amount", money(c.lastPaymentAmount)),
+        kv("Last payment date", fmtDate(c.lastPaymentDate)),
+      ].join(""), true);
+
+      cards = predictions + insightsCard(c, "Customer payment predictions (preview)")
+            + credit + history + agedCard(c, false) + detailsCard(c, false);
+    } else {
+      const t = TRANSACTIONS.find(x => x.voucher === state.selTxn)
+             || TRANSACTIONS.find(x => x.account === c.account);
+      const pred = t ? card("pred-t", "Payment prediction (preview)", `
+        <div class="balrow"><span class="lbl">Balance</span>
+          <span><span class="val">${money(t.balance)}</span><span class="cur">${esc(t.currency)}</span></span></div>
+        <div class="gauges">
+          <div class="gauge">${gauge(t.onTime, "var(--ontime)")}<div class="glbl">On time</div></div>
+          <div class="gauge">${gauge(t.late, "var(--late)")}<div class="glbl">Late</div></div>
+          <div class="gauge">${gauge(t.veryLate, "var(--verylate)")}<div class="glbl">Very late</div></div>
+        </div>
+        <div class="factors"><div class="h">Top factors</div>
+          ${c.factors.map(f => `<a>${esc(f)}</a>`).join("")}</div>`)
+        : "";
+      cards = pred + insightsCard(c, "Customer insights (preview)")
+            + agedCard(c, true) + detailsCard(c, true);
+    }
+    return `<aside class="factbox"><div class="fbtitle">Related information</div>${cards}</aside>`;
+  }
+
+  /* ---------------- grid ---------------- */
+  const COLS = {
+    customers: [
+      {k: "account", t: "Customer account", w: "150px"},
+      {k: "name", t: "Name", w: "auto"},
+      {k: "balance", t: "Balance", w: "120px", num: 1},
+      {k: "currency", t: "Currency", w: "80px"},
+      {k: "onTime", t: "On time", w: "110px", num: 1},
+      {k: "late", t: "Late", w: "110px", num: 1},
+      {k: "veryLate", t: "Very late", w: "110px", num: 1},
+    ],
+    transactions: [
+      {k: "account", t: "Customer account", w: "120px"},
+      {k: "name", t: "Name", w: "200px"},
+      {k: "onTime", t: "On time probability", w: "130px", num: 1},
+      {k: "voucher", t: "Voucher", w: "116px"},
+      {k: "invoice", t: "Invoice", w: "106px"},
+      {k: "type", t: "Transaction type", w: "122px"},
+      {k: "date", t: "Date", w: "86px"},
+      {k: "due", t: "Due date", w: "90px"},
+      {k: "amount", t: "Amount in transaction currency", w: "118px", num: 1},
+      {k: "balance", t: "Balance", w: "104px", num: 1},
+      {k: "currency", t: "Currency", w: "72px"},
+    ],
+  };
+
+  /* Keep the FactBox locked to whatever row is actually highlighted. Sorting
+     and filtering can push the previous selection out of view, so re-point at
+     the first visible row whenever that happens. */
+  function normalizeSelection(data) {
+    if (!data.length) return;
+    if (state.view === "customers") {
+      if (!data.some(r => r.account === state.selCustomer)) state.selCustomer = data[0].account;
+    } else {
+      if (!data.some(r => r.voucher === state.selTxn)) state.selTxn = data[0].voucher;
+      const t = TRANSACTIONS.find(x => x.voucher === state.selTxn);
+      if (t) state.selCustomer = t.account;
+    }
+  }
+
+  function cellHtml(r, col) {
+    const v = r[col.k];
+    switch (col.k) {
+      case "account":
+        return `<span class="lnk">${esc(v)}</span>`;
+      case "name":
+        return state.view === "transactions" ? `<span class="lnk">${esc(v)}</span>` : esc(v);
+      case "invoice":
+      case "voucher":
+        return state.view === "transactions" ? `<span class="lnk">${esc(v)}</span>` : esc(v);
+      case "onTime":
+        return `<span class="pcell">${v}%${v < settings.redDotThreshold ? '<span class="dot"></span>' : '<span class="dot" style="background:transparent"></span>'}</span>`;
+      case "late":
+      case "veryLate":
+        return v + "%";
+      case "balance":
+      case "amount":
+        return money(v);
+      case "date":
+      case "due":
+        return fmtDate(v);
+      default:
+        return esc(v);
+    }
+  }
+
+  function grid(data) {
+    const cols = COLS[state.view];
+    const s = state.sort[state.view];
+    const selKey = state.view === "customers" ? state.selCustomer : state.selTxn;
+
+    const head = cols.map(c =>
+      `<th data-sort="${c.k}" class="${c.num ? "num" : ""}" style="width:${c.w}">${esc(c.t)}` +
+      (s.key === c.k ? `<span class="sort">${s.dir > 0 ? "↑" : "↓"}</span>` : "") + `</th>`).join("");
+
+    const body = data.length ? data.map(r => {
+      const id = state.view === "customers" ? r.account : r.voucher;
+      return `<tr data-id="${esc(id)}" data-acct="${esc(r.account)}" class="${id === selKey ? "sel" : ""}">` +
+        cols.map(c => `<td class="${c.num ? "num" : ""}">${cellHtml(r, c)}</td>`).join("") + `</tr>`;
+    }).join("")
+      : `<tr><td colspan="${cols.length}" class="empty">No records match the current filter.</td></tr>`;
+
+    return `<div class="gridwrap"><table class="${state.view}"><thead><tr>${head}</tr></thead>
+      <tbody>${body}</tbody></table></div>`;
+  }
+
+  /* ---------------- page chrome ---------------- */
+  function actionpane() {
+    if (state.view === "options") {
+      return `<div class="actionpane">
+        <button class="apbtn" data-go="back" title="Back">${I.back}</button>
+        <button class="apbtn" id="optsave">${I.save}<span>Save</span></button>
+        <button class="apbtn">Usage data</button>
+        <button class="apbtn">Personalization</button>
+        <button class="apbtn" id="optreset" title="Discard local changes and reload the workbook defaults">Options</button>
+        <button class="apbtn">${I.search}</button></div>`;
+    }
+    const left = state.view === "customers"
+      ? `<button class="apbtn info">${I.info}<span>About payment predictions</span></button>
+         <div class="apsep"></div>
+         <button class="apbtn">Customer</button>
+         <button class="apbtn" data-go="transactions" title="Transactions predicted to be paid late">Collect</button>
+         <button class="apbtn">General</button>
+         <button class="apbtn">Options</button>`
+      : `<button class="apbtn">Vouchers</button>
+         <button class="apbtn" data-go="customers">Transactions</button>
+         <button class="apbtn">Options</button>`;
+    return `<div class="actionpane">
+      <button class="apbtn" data-go="${state.view === "customers" ? "customers" : "customers"}" title="Back">${I.back}</button>
+      ${left}
+      <button class="apbtn">${I.search}</button>
+      <div class="apright">
+        <button title="Attachments">${I.attach}</button>
+        <button title="Analytics">${I.chart}</button>
+        <button title="Notifications" style="position:relative">${I.bell}<span class="badge">1</span></button>
+        <button title="Refresh">${I.refresh}</button>
+        <button title="Open in new window">${I.share}</button>
+      </div></div>`;
+  }
+
+  function header() {
+    const chip = [settings.legalEntity, settings.organization].filter(Boolean).join(" | ");
+    const who = [settings.userName, settings.userEmail].filter(Boolean).join(" - ");
+    return `<header class="topbar">
+      <button class="waffle">${I.waffle}</button>
+      <span class="brand">Finance and Operations</span>
+      <div class="tsearch">${I.search}<input placeholder="Search for a page" aria-label="Search for a page"></div>
+      <div class="tbright">
+        <span class="lechip">${esc(chip)}</span>
+        <button class="tb-ico">${I.bell}</button>
+        <button class="tb-ico" id="gotoptions" title="Settings">${I.gear}</button>
+        <button class="tb-ico">${I.help}</button>
+        <div class="avatar" id="gotoptions2" title="${esc(who)}">${esc(initials())}</div>
+      </div></header>`;
+  }
+
+  function rail() {
+    return `<nav class="rail">
+      <button>${I.burger}</button><button class="on">${I.home}</button><button>${I.star}</button>
+      <button>${I.clock}</button><button>${I.grid}</button><button>${I.list}</button></nav>`;
+  }
+
+  function page(data) {
+    const isC = state.view === "customers";
+    const fieldOpts = Object.keys(FIELDS[state.view])
+      .map(f => `<option${f === state.field ? " selected" : ""}>${f}</option>`).join("");
+
+    const crumb = isC ? "Payment predictions per customer"
+      : "Transactions predicted to be paid late (preview)"
+        + (state.accountFilter ? " - " + esc(byAccount[state.accountFilter].name) : "");
+    const title = isC ? "Standard view" : "All transactions";
+
+    return `<div class="page">
+      <div class="crumb">${crumb}</div>
+      <div class="vtitle"><button>${esc(title)} ${I.caret}</button></div>
+      <div class="filters">
+        <div class="fbox">${I.search}<input id="q" placeholder="Filter" value="${esc(state.query)}"></div>
+        <select class="fsel" id="field">${fieldOpts}</select>
+        <span class="rescount">${data.length} record${data.length === 1 ? "" : "s"}</span>
+      </div>
+      ${grid(data)}</div>`;
+  }
+
+  /* ---------------- User options page ----------------
+     Mirrors D365 F&O: System settings > User options, with the same four
+     sections and the same colour-theme / element-size controls. */
+  const OPT_TABS = ["Visual", "Preferences", "Account", "Workflow"];
+
+  function optVisual() {
+    const swatches = THEMES.map(t =>
+      `<button class="swatch${t.key === settings.theme ? " on" : ""}${t.hc ? " hc" : ""}"
+         data-theme="${t.key}" title="${esc(t.label)}" aria-label="${esc(t.label)}"
+         ${t.hc ? "" : `style="background:${t.hdr}"`}></button>`).join("");
+
+    const tile = (key, rows, cols, label) => {
+      const cells = Array.from({length: rows * cols}, () => "<i></i>").join("");
+      return `<button class="sizetile${settings.size === key ? " on" : ""}" data-size="${key}"
+        title="${label}" aria-label="${label}"><span class="sthdr"></span>
+        <span class="stgrid" style="grid-template-columns:repeat(${cols},1fr);
+          grid-template-rows:repeat(${rows},1fr)">${cells}</span></button>`;
+    };
+
+    return `<h2>Choose color theme and the size of elements</h2>
+      <div class="optlabel">Color theme</div>
+      <div class="swatches">${swatches}</div>
+      <div class="optlabel">Size</div>
+      <div class="sizetiles">${tile("comfortable", 5, 7, "Comfortable")}${tile("compact", 7, 9, "Compact")}</div>`;
+  }
+
+  function field(key, label, hint, disabled) {
+    return `<div class="optfield"><label for="opt-${key}">${esc(label)}</label>
+      <input id="opt-${key}" data-field="${key}" value="${esc(settings[key])}"
+        ${disabled ? "disabled" : ""}>
+      ${hint ? `<div class="hint">${esc(hint)}</div>` : ""}</div>`;
+  }
+
+  function optAccount() {
+    return `<h2>Identify yourself and the legal entity you are working in</h2>
+      <div class="optfields">
+        ${field("legalEntity", "Legal entity ID", "Shown in the header chip, e.g. SBN or USMF")}
+        ${field("organization", "Legal entity name", "The long name shown next to the ID")}
+        ${field("userName", "User name", "Shown on hover over your avatar")}
+        ${field("userInitials", "Initials", "Leave blank to derive them from the user name")}
+        ${field("userEmail", "Email", "Display only")}
+      </div>
+      <div class="optnote">This page sets the demo persona shown in the interface. It does not
+        collect or store a password &mdash; there is nothing to sign in to. The dashboard runs
+        entirely in your browser and holds no connection to a live environment.</div>`;
+  }
+
+  function optPreferences() {
+    return `<h2>Set the preferences that apply to this demo</h2>
+      <div class="optfields">
+        ${field("demoName", "Demo name", "Your own label for this scenario")}
+        ${field("agingDefinition", "Aging period definition", "Shown in the Aged balances pane")}
+        ${field("redDotThreshold", "At-risk threshold (%)",
+                "On-time probability below this shows the red risk indicator")}
+        <div class="optfield"><label>Currency</label>
+          <input value="${esc(cfg.currency)}" disabled>
+          <div class="hint">Set in the workbook &mdash; changing it here would not re-cost the data</div></div>
+        <div class="optfield"><label>As of date</label>
+          <input value="${fmtDate(cfg.asOfDate)}" disabled>
+          <div class="hint">Set in the workbook &mdash; the aging buckets are calculated from it</div></div>
+      </div>
+      <div class="optnote">All figures in this dashboard are synthetic, generated from
+        data/PaymentPrediction-Demo.xlsx for demonstration purposes. This is not a live
+        Dynamics 365 environment and contains no real customer data.</div>`;
+  }
+
+  function optWorkflow() {
+    const ck = (key, label) => `<label class="optcheck"><input type="checkbox" data-check="${key}"
+      ${settings[key] ? "checked" : ""}> ${esc(label)}</label>`;
+    return `<h2>Choose how you are notified about work assigned to you</h2>
+      <div class="optfields">
+        ${ck("notifyActionCenter", "Send notifications to the Action center")}
+        ${ck("notifyEmail", "Send notifications in email")}
+      </div>`;
+  }
+
+  function optionsPage() {
+    const nav = OPT_TABS.map(t =>
+      `<button class="${t === state.optTab ? "on" : ""}" data-opttab="${t}">${t}</button>`).join("");
+    const body = state.optTab === "Visual" ? optVisual()
+      : state.optTab === "Preferences" ? optPreferences()
+      : state.optTab === "Account" ? optAccount()
+      : optWorkflow();
+    const saved = state.savedMsg
+      ? `<div class="msgbar">${I.ok}<span>${esc(state.savedMsg)}</span></div>` : "";
+
+    return `<div class="optpage">
+      <div class="vtitle"><button style="font-size:13px;font-weight:400;color:var(--txt2)">
+        Standard view ${I.caret}</button></div>
+      <h1>User options</h1>
+      ${saved}
+      <div class="optlayout"><nav class="optnav">${nav}</nav>
+        <div class="optbody">${body}</div></div></div>`;
+  }
+
+  /* ---------------- deep links ----------------
+     #customers                  the per-customer list
+     #transactions               all transactions predicted to be paid late
+     #transactions/CON-3005      drilled into one customer
+     Bookmark these to open the demo on the exact screen you want.        */
+  function applyHash() {
+    const [view, acct] = decodeURIComponent(location.hash.replace(/^#/, "")).split("/");
+    if (view === "options") {
+      state.view = "options";
+      if (OPT_TABS.includes(acct)) state.optTab = acct;
+    } else if (view === "transactions") {
+      state.view = "transactions";
+      state.accountFilter = byAccount[acct] ? acct : null;
+      const first = TRANSACTIONS.find(t => !state.accountFilter || t.account === state.accountFilter);
+      if (first) { state.selTxn = first.voucher; state.selCustomer = first.account; }
+    } else {
+      state.view = "customers";
+      state.accountFilter = null;
+    }
+  }
+
+  function syncHash() {
+    const h = state.view === "options" ? "#options/" + state.optTab
+      : state.view === "customers" ? "#customers"
+      : "#transactions" + (state.accountFilter ? "/" + state.accountFilter : "");
+    if (location.hash !== h) history.replaceState(null, "", h);
+  }
+
+  function render() {
+    applyAppearance();
+
+    let main, strip = "";
+    if (state.view === "options") {
+      main = `<main class="main">${actionpane()}
+        <div class="content">${optionsPage()}</div></main>`;
+    } else {
+      const data = rows();
+      normalizeSelection(data);
+      main = `<main class="main">${actionpane()}
+        <div class="content">${page(data)}${factbox()}</div></main>`;
+      strip = `<div class="rstrip">
+        <button title="Filters">${I.filter}</button>
+        <button class="on" title="Related information">${I.info}</button></div>`;
+    }
+
+    document.getElementById("root").innerHTML = `<div class="shell">
+      ${header()}
+      <div class="body">${rail()}${main}${strip}</div></div>`;
+    syncHash();
+    wire();
+  }
+
+  /* ---------------- events ---------------- */
+  function drill(account) {
+    state.view = "transactions";
+    state.accountFilter = account;
+    state.selCustomer = account;
+    const first = TRANSACTIONS.find(t => t.account === account);
+    state.selTxn = first ? first.voucher : null;
+    state.query = ""; state.field = "All";
+    render();
+  }
+
+  function openOptions() {
+    if (state.view !== "options") state.returnView = state.view;
+    state.view = "options";
+    state.savedMsg = "";
+    render();
+  }
+
+  function wireOptions() {
+    const back = document.querySelector('[data-go="back"]');
+    if (back) back.addEventListener("click", () => {
+      state.view = state.returnView; state.savedMsg = ""; render();
+    });
+
+    document.querySelectorAll("[data-opttab]").forEach(b => b.addEventListener("click", () => {
+      state.optTab = b.dataset.opttab; state.savedMsg = ""; render();
+    }));
+
+    // D365 applies a theme the moment you pick it, before you save.
+    document.querySelectorAll("[data-theme]").forEach(b => b.addEventListener("click", () => {
+      settings.theme = b.dataset.theme; state.savedMsg = ""; render();
+    }));
+    document.querySelectorAll("[data-size]").forEach(b => b.addEventListener("click", () => {
+      settings.size = b.dataset.size; state.savedMsg = ""; render();
+    }));
+
+    document.querySelectorAll("[data-field]").forEach(inp => {
+      inp.addEventListener("input", e => {
+        const k = e.target.dataset.field;
+        settings[k] = k === "redDotThreshold"
+          ? (parseInt(e.target.value, 10) || 0)
+          : e.target.value;
+        // Live-update the header chip without stealing focus from the field.
+        const chip = document.querySelector(".lechip");
+        if (chip) chip.textContent = [settings.legalEntity, settings.organization]
+          .filter(Boolean).join(" | ");
+        const av = document.querySelector(".avatar");
+        if (av) av.textContent = initials();
+      });
+    });
+
+    document.querySelectorAll("[data-check]").forEach(c => c.addEventListener("change", e => {
+      settings[e.target.dataset.check] = e.target.checked;
+    }));
+
+    const save = document.getElementById("optsave");
+    if (save) save.addEventListener("click", () => {
+      state.savedMsg = writeStored(settings)
+        ? "Your changes have been saved and will be applied the next time this page is opened."
+        : "Changes applied for this session. This browser blocked local storage, so they will "
+          + "not persist after a reload.";
+      render();
+    });
+
+    const reset = document.getElementById("optreset");
+    if (reset) reset.addEventListener("click", () => {
+      try { localStorage.removeItem(SKEY); } catch (e) { /* nothing to clear */ }
+      settings = Object.assign({}, DEFAULTS);
+      state.savedMsg = "Reset to the defaults held in the workbook.";
+      render();
+    });
+  }
+
+  function wire() {
+    document.querySelectorAll("#gotoptions, #gotoptions2")
+      .forEach(b => b.addEventListener("click", openOptions));
+
+    if (state.view === "options") { wireOptions(); return; }
+
+    const q = document.getElementById("q");
+    if (q) {
+      q.addEventListener("input", e => {
+        state.query = e.target.value;
+        const pos = e.target.selectionStart;
+        render();
+        const nq = document.getElementById("q");
+        nq.focus(); nq.setSelectionRange(pos, pos);
+      });
+    }
+    const f = document.getElementById("field");
+    if (f) f.addEventListener("change", e => { state.field = e.target.value; render(); });
+
+    document.querySelectorAll("[data-sort]").forEach(th => th.addEventListener("click", () => {
+      const s = state.sort[state.view], k = th.dataset.sort;
+      if (s.key === k) s.dir *= -1; else { s.key = k; s.dir = 1; }
+      render();
+    }));
+
+    document.querySelectorAll("tbody tr[data-id]").forEach(tr => {
+      tr.addEventListener("click", () => {
+        if (state.view === "customers") state.selCustomer = tr.dataset.id;
+        else { state.selTxn = tr.dataset.id; state.selCustomer = tr.dataset.acct; }
+        render();
+      });
+      tr.addEventListener("dblclick", () => {
+        if (state.view === "customers") drill(tr.dataset.acct);
+      });
+    });
+
+    // The customer-account hyperlink drills straight into that customer's
+    // predicted transactions -- same gesture as the real F&O list page.
+    document.querySelectorAll("tbody tr[data-id] td:first-child .lnk").forEach(a =>
+      a.addEventListener("click", e => {
+        e.stopPropagation();
+        const tr = a.closest("tr");
+        if (state.view === "customers") drill(tr.dataset.acct);
+        else { state.selTxn = tr.dataset.id; state.selCustomer = tr.dataset.acct; render(); }
+      }));
+
+    document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
+      const go = b.dataset.go;
+      if (go === "transactions") {
+        state.view = "transactions";
+        state.accountFilter = null;
+        const first = TRANSACTIONS.find(t => t.account === state.selCustomer) || TRANSACTIONS[0];
+        state.selTxn = first ? first.voucher : null;
+        if (first) state.selCustomer = first.account;
+      } else {
+        state.view = "customers";
+        state.accountFilter = null;
+      }
+      state.query = ""; state.field = "All";
+      render();
+    }));
+
+    document.querySelectorAll("[data-card]").forEach(h => h.addEventListener("click", () => {
+      const id = h.dataset.card;
+      state.collapsed[id] = !state.collapsed[id];
+      render();
+    }));
+
+    const x = document.getElementById("closeflag");
+    if (x) x.addEventListener("click", () => { state.flag = false; render(); });
+  }
+
+  window.addEventListener("hashchange", () => { applyHash(); render(); });
+  applyHash();
+  render();
+})();
+</script>
+</body>
+</html>

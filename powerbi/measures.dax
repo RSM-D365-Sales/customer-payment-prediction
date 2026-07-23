@@ -1,0 +1,192 @@
+// =============================================================================
+// D365 F&SC - Payment prediction demo : DAX measures
+// =============================================================================
+// Paste each block into Power BI Desktop as a new measure (Home > New measure).
+// Home table: create an empty table called `_Measures` and put them all there.
+//
+// Source tables (loaded from data/PaymentPrediction-Demo.xlsx):
+//   Customers, Transactions, CustomerPredictions, AgedBalances, TopFactors, Config
+//
+// The probability columns arrive as decimals (0.82), formatted as Percentage.
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 1. Configuration
+// -----------------------------------------------------------------------------
+
+Red dot threshold =
+VAR _t =
+    LOOKUPVALUE ( Config[Value], Config[Setting], "Red dot threshold (%)" )
+RETURN
+    DIVIDE ( VALUE ( _t ), 100 )
+
+As of date =
+VAR _d = LOOKUPVALUE ( Config[Value], Config[Setting], "As of date" )
+RETURN
+    FORMAT ( VALUE ( _d ), "M/d/yyyy" )
+
+Demo currency =
+LOOKUPVALUE ( Config[Value], Config[Setting], "Currency" )
+
+
+// -----------------------------------------------------------------------------
+// 2. Core amounts  -- the three prediction buckets are amount-weighted, which
+//    is exactly how the D365 FactBox splits the open amount.
+// -----------------------------------------------------------------------------
+
+Open amount = SUM ( Transactions[Balance] )
+
+On time amount =
+SUMX ( Transactions, Transactions[Balance] * Transactions[On time probability] )
+
+Late amount =
+SUMX ( Transactions, Transactions[Balance] * Transactions[Late probability] )
+
+Very late amount =
+SUMX ( Transactions, Transactions[Balance] * Transactions[Very late probability] )
+
+Predicted late amount = [Late amount] + [Very late amount]
+
+
+// -----------------------------------------------------------------------------
+// 3. Percentages -- these are what drive the gauges / bars
+// -----------------------------------------------------------------------------
+
+On time % = DIVIDE ( [On time amount], [Open amount] )
+Late % = DIVIDE ( [Late amount], [Open amount] )
+Very late % = DIVIDE ( [Very late amount], [Open amount] )
+Predicted late % = DIVIDE ( [Predicted late amount], [Open amount] )
+
+
+// -----------------------------------------------------------------------------
+// 4. Risk counts
+// -----------------------------------------------------------------------------
+
+Open transactions = COUNTROWS ( Transactions )
+
+At risk transactions =
+VAR _th = [Red dot threshold]
+RETURN
+    CALCULATE (
+        COUNTROWS ( Transactions ),
+        FILTER ( Transactions, Transactions[On time probability] < _th )
+    )
+
+At risk amount =
+VAR _th = [Red dot threshold]
+RETURN
+    CALCULATE (
+        SUM ( Transactions[Balance] ),
+        FILTER ( Transactions, Transactions[On time probability] < _th )
+    )
+
+At risk customers =
+VAR _th = [Red dot threshold]
+RETURN
+    COUNTROWS (
+        FILTER ( VALUES ( Customers[Customer account] ), [On time %] < _th )
+    )
+
+Past due amount =
+CALCULATE ( SUM ( Transactions[Balance] ), Transactions[Days past due] > 0 )
+
+Past due transactions =
+CALCULATE ( COUNTROWS ( Transactions ), Transactions[Days past due] > 0 )
+
+
+// -----------------------------------------------------------------------------
+// 5. Row-level decoration -- reproduces the red dot from the D365 grid.
+//    Use as a separate narrow column in the table visual, or via
+//    Conditional formatting > Font colour > Field value on [On time colour].
+// -----------------------------------------------------------------------------
+
+Risk dot =
+VAR _p = SELECTEDVALUE ( Transactions[On time probability] )
+RETURN
+    IF ( NOT ISBLANK ( _p ) && _p < [Red dot threshold], UNICHAR ( 9679 ), "" )
+
+On time colour =
+VAR _p =
+    COALESCE ( SELECTEDVALUE ( Transactions[On time probability] ), [On time %] )
+RETURN
+    SWITCH (
+        TRUE (),
+        _p < 0.40, "#C50F1F",   // very late red
+        _p < 0.60, "#E36C0A",   // late orange
+        "#107C10"               // on time green
+    )
+
+Risk band =
+VAR _p = [On time %]
+RETURN
+    SWITCH (
+        TRUE (),
+        _p < 0.40, "1 - High risk",
+        _p < 0.60, "2 - Watch",
+        _p < 0.80, "3 - Moderate",
+        "4 - Low risk"
+    )
+
+
+// -----------------------------------------------------------------------------
+// 6. Aged balances  (matches the Aged balances FactBox)
+// -----------------------------------------------------------------------------
+
+Aged current      = SUM ( AgedBalances[Current] )
+Aged 30 days      = SUM ( AgedBalances[30 days] )
+Aged 60 days      = SUM ( AgedBalances[60 days] )
+Aged 90 days      = SUM ( AgedBalances[90 days] )
+Aged 180 and over = SUM ( AgedBalances[180 and over] )
+Aged balance      = SUM ( AgedBalances[Balance] )
+
+Aged 90 plus % =
+DIVIDE ( [Aged 90 days] + [Aged 180 and over], [Aged balance] )
+
+
+// -----------------------------------------------------------------------------
+// 7. Customer insights  (matches the Customer payment predictions FactBox)
+// -----------------------------------------------------------------------------
+
+Open invoices          = SUM ( CustomerPredictions[Open invoices] )
+Late invoices          = SUM ( CustomerPredictions[Late invoices] )
+Open collection cases  = SUM ( CustomerPredictions[Open collection cases] )
+Open activities        = SUM ( CustomerPredictions[Open activities] )
+Average days to pay    = AVERAGE ( CustomerPredictions[Average days to pay] )
+Average invoice balance = AVERAGE ( CustomerPredictions[Average invoice balance] )
+Average amount late    = AVERAGE ( CustomerPredictions[Average amount late] )
+
+Last payment amount =
+CALCULATE (
+    SUM ( CustomerPredictions[Last payment amount] ),
+    VALUES ( CustomerPredictions[Customer account] )
+)
+
+Last payment date =
+VAR _d = MAX ( CustomerPredictions[Last payment date] )
+RETURN
+    IF ( ISBLANK ( _d ), "", FORMAT ( _d, "M/d/yyyy" ) )
+
+Credit limit = SUM ( CustomerPredictions[Credit limit] )
+Credit used % = DIVIDE ( [Open amount], [Credit limit] )
+
+
+// -----------------------------------------------------------------------------
+// 8. Card titles that read like the D365 FactBox
+// -----------------------------------------------------------------------------
+
+Balance with currency =
+FORMAT ( [Open amount], "#,##0.00" ) & " " & [Demo currency]
+
+Aged balances title = "Aged balances - " & [As of date]
+
+Top factors =
+CONCATENATEX (
+    TOPN ( 3, TopFactors, TopFactors[Rank], ASC ),
+    TopFactors[Factor],
+    UNICHAR ( 10 ),
+    TopFactors[Rank], ASC
+)
+
+Selected customer =
+COALESCE ( SELECTEDVALUE ( Customers[Name] ), "All customers" )
