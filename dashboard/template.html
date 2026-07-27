@@ -99,6 +99,15 @@ thead th{position:sticky;top:0;z-index:2;background:var(--white);border-bottom:1
 thead th:hover{background:var(--line2)}
 thead th.num{text-align:right}
 th .sort{color:var(--txt2);font-size:10px;margin-left:3px}
+/* draggable column resize -- grip on the right edge of each header cell */
+table.cfit{width:auto;min-width:0}
+th .colgrip{position:absolute;top:0;right:0;width:9px;height:100%;cursor:col-resize;z-index:3;
+            touch-action:none}
+th .colgrip::before{content:"";position:absolute;top:6px;bottom:6px;right:2px;width:2px;border-radius:1px;
+                    background:transparent}
+thead th:hover .colgrip::before{background:var(--line)}
+th .colgrip:hover::before,th .colgrip.active::before{background:var(--accent)}
+body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:none}
 tbody td{padding:0 8px;height:33px;font-size:13px;border-bottom:1px solid #F5F4F3;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -310,6 +319,18 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     try { localStorage.setItem(SKEY, JSON.stringify(s)); return true; } catch (e) { return false; }
   }
 
+  /* Column widths the presenter has dragged, layered on top of the template
+     defaults and kept in their own localStorage key so they survive re-renders
+     (sort/filter/select all rebuild the grid) and page reloads. */
+  const CKEY = "d365-pp-demo-colwidths";
+  function loadColw() {
+    try { const o = JSON.parse(localStorage.getItem(CKEY)); return (o && typeof o === "object") ? o : {}; }
+    catch (e) { return {}; }
+  }
+  function saveColw(o) {
+    try { localStorage.setItem(CKEY, JSON.stringify(o)); } catch (e) { /* storage blocked */ }
+  }
+
   let settings = Object.assign({}, DEFAULTS, readStored());
 
   function initials() {
@@ -386,7 +407,9 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     field: "All",
     sort: {customers: {key: "account", dir: 1}, transactions: {key: "account", dir: 1}},
     collapsed: {},
+    colw: loadColw(),           // {customers:{colKey:px,...}, transactions:{...}}
   };
+  let suppressSortClick = false;   // set at the end of a column drag so the trailing click doesn't sort
 
   /* ---------------- data selectors ---------------- */
   const FIELDS = {
@@ -626,9 +649,17 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     const s = state.sort[state.view];
     const selKey = state.view === "customers" ? state.selCustomer : state.selTxn;
 
+    // Column widths: template defaults unless the presenter has dragged this
+    // view, in which case every column carries an explicit pixel width.
+    const ov = state.colw[state.view];
+    const custom = !!(ov && Object.keys(ov).length);
+    const px = w => { const n = parseInt(w, 10); return isNaN(n) ? 160 : n; };
+    const wpx = c => (ov && ov[c.k] != null) ? ov[c.k] : px(c.w);
+
     const head = cols.map(c =>
-      `<th data-sort="${c.k}" class="${c.num ? "num" : ""}" style="width:${c.w}">${esc(c.t)}` +
-      (s.key === c.k ? `<span class="sort">${s.dir > 0 ? "↑" : "↓"}</span>` : "") + `</th>`).join("");
+      `<th data-sort="${c.k}" class="${c.num ? "num" : ""}" style="width:${custom ? wpx(c) + "px" : c.w}">${esc(c.t)}` +
+      (s.key === c.k ? `<span class="sort">${s.dir > 0 ? "↑" : "↓"}</span>` : "") +
+      `<span class="colgrip" title="Drag to resize this column. Double-click to reset all columns."></span></th>`).join("");
 
     const body = data.length ? data.map(r => {
       const id = state.view === "customers" ? r.account : r.voucher;
@@ -637,8 +668,75 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     }).join("")
       : `<tr><td colspan="${cols.length}" class="empty">No records match the current filter.</td></tr>`;
 
-    return `<div class="gridwrap"><table class="${state.view}"><thead><tr>${head}</tr></thead>
+    // When custom widths are active, pin the table to their exact sum so each
+    // drag is 1:1 and the grid scrolls horizontally rather than rescaling.
+    const tclass = state.view + (custom ? " cfit" : "");
+    const tstyle = custom ? ` style="width:${cols.reduce((t, c) => t + wpx(c), 0)}px"` : "";
+
+    return `<div class="gridwrap"><table class="${tclass}"${tstyle}><thead><tr>${head}</tr></thead>
       <tbody>${body}</tbody></table></div>`;
+  }
+
+  /* Draggable column widths. A grip on each header's right edge starts a drag;
+     the first drag snapshots every column to an explicit pixel width so the
+     layout is exact from then on. Widths persist in state + localStorage and are
+     re-applied by grid() on every re-render. Double-click any grip resets the
+     view to the template defaults. */
+  const MIN_COL_W = 48;
+  function wireColumnResize() {
+    document.querySelectorAll("thead th .colgrip").forEach(grip => {
+      grip.addEventListener("click", e => e.stopPropagation());   // never sort from the grip
+      grip.addEventListener("dblclick", e => {
+        e.stopPropagation();
+        delete state.colw[state.view];
+        saveColw(state.colw);
+        render();
+      });
+      grip.addEventListener("pointerdown", e => {
+        if (e.button) return;                       // primary button only
+        e.stopPropagation();                        // don't let the header see it (no sort/select)
+        const th = grip.closest("th");
+        const table = th.closest("table");
+        const view = state.view;
+        const key = th.dataset.sort;
+
+        const snap = {};
+        let total = 0;
+        table.querySelectorAll("thead th[data-sort]").forEach(h => {
+          const w = Math.round(h.getBoundingClientRect().width);
+          snap[h.dataset.sort] = w; total += w;
+        });
+        const startX = e.clientX, startW = snap[key];
+
+        table.classList.add("cfit");                // exact widths for the duration of the drag
+        table.style.width = total + "px";
+        document.body.classList.add("col-resizing");
+        grip.classList.add("active");
+        try { grip.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
+
+        const onMove = ev => {
+          const w = Math.max(MIN_COL_W, Math.round(startW + (ev.clientX - startX)));
+          snap[key] = w;
+          th.style.width = w + "px";
+          table.style.width = (total - startW + w) + "px";
+        };
+        const onUp = () => {
+          grip.removeEventListener("pointermove", onMove);
+          grip.removeEventListener("pointerup", onUp);
+          grip.removeEventListener("pointercancel", onUp);
+          try { grip.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+          document.body.classList.remove("col-resizing");
+          grip.classList.remove("active");
+          state.colw[view] = snap;
+          saveColw(state.colw);
+          suppressSortClick = true;                 // swallow the trailing click so it doesn't sort
+          setTimeout(() => { suppressSortClick = false; }, 0);
+        };
+        grip.addEventListener("pointermove", onMove);
+        grip.addEventListener("pointerup", onUp);
+        grip.addEventListener("pointercancel", onUp);
+      });
+    });
   }
 
   /* ---------------- page chrome ---------------- */
@@ -935,15 +1033,17 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     const reset = document.getElementById("optreset");
     if (reset) reset.addEventListener("click", () => {
       try { localStorage.removeItem(SKEY); } catch (e) { /* nothing to clear */ }
+      try { localStorage.removeItem(CKEY); } catch (e) { /* nothing to clear */ }
       settings = Object.assign({}, DEFAULTS);
+      state.colw = {};
       state.savedMsg = "Reset to the defaults held in the workbook.";
       render();
     });
   }
 
   function wire() {
-    document.querySelectorAll("#gotoptions, #gotoptions2")
-      .forEach(b => b.addEventListener("click", openOptions));
+    document.querySelectorAll("[data-options]")
+      .forEach(b => b.addEventListener("click", () => openOptions(b.dataset.options)));
 
     if (state.view === "options") { wireOptions(); return; }
 
@@ -961,10 +1061,12 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     if (f) f.addEventListener("change", e => { state.field = e.target.value; render(); });
 
     document.querySelectorAll("[data-sort]").forEach(th => th.addEventListener("click", () => {
+      if (suppressSortClick) { suppressSortClick = false; return; }
       const s = state.sort[state.view], k = th.dataset.sort;
       if (s.key === k) s.dir *= -1; else { s.key = k; s.dir = 1; }
       render();
     }));
+    wireColumnResize();
 
     document.querySelectorAll("tbody tr[data-id]").forEach(tr => {
       tr.addEventListener("click", () => {
