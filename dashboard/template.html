@@ -347,7 +347,7 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     waffle: '<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><g><rect x="0" y="0" width="4" height="4" rx=".5"/><rect x="7" y="0" width="4" height="4" rx=".5"/><rect x="14" y="0" width="4" height="4" rx=".5"/><rect x="0" y="7" width="4" height="4" rx=".5"/><rect x="7" y="7" width="4" height="4" rx=".5"/><rect x="14" y="7" width="4" height="4" rx=".5"/><rect x="0" y="14" width="4" height="4" rx=".5"/><rect x="7" y="14" width="4" height="4" rx=".5"/><rect x="14" y="14" width="4" height="4" rx=".5"/></g></svg>',
     search: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6.6" cy="6.6" r="4.6"/><path d="M10.2 10.2 14 14"/></svg>',
     bell: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 6.5a4 4 0 0 1 8 0c0 3 .9 4.2 1.4 4.7H2.6C3.1 10.7 4 9.5 4 6.5Z"/><path d="M6.6 13.2a1.6 1.6 0 0 0 2.8 0"/></svg>',
-    gear: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.4v1.8M8 12.8v1.8M14.6 8h-1.8M3.2 8H1.4M12.7 3.3l-1.3 1.3M4.6 11.4l-1.3 1.3M12.7 12.7l-1.3-1.3M4.6 4.6 3.3 3.3"/></svg>',
+    gear: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
     help: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><path d="M6.2 6.1a1.85 1.85 0 1 1 2.3 1.9c-.4.15-.5.5-.5.9v.4"/><circle cx="8" cy="11.6" r=".75" fill="currentColor" stroke="none"/></svg>',
     back: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 3 2.4 8 7 13M2.6 8H14"/></svg>',
     info: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><path d="M8 7.2v4.1"/><circle cx="8" cy="4.9" r=".8" fill="currentColor" stroke="none"/></svg>',
@@ -683,11 +683,13 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
       <span class="brand">Finance and Operations</span>
       <div class="tsearch">${I.search}<input placeholder="Search for a page" aria-label="Search for a page"></div>
       <div class="tbright">
-        <span class="lechip">${esc(chip)}</span>
+        <button class="lechip" data-options="Account"
+          title="Change legal entity - ${esc(who)}">${esc(chip)}</button>
         <button class="tb-ico">${I.bell}</button>
-        <button class="tb-ico" id="gotoptions" title="Settings">${I.gear}</button>
+        <button class="tb-ico" data-options="Visual" title="Settings">${I.gear}</button>
         <button class="tb-ico">${I.help}</button>
-        <div class="avatar" id="gotoptions2" title="${esc(who)}">${esc(initials())}</div>
+        <button class="avatar" data-options="Account"
+          title="${esc(who)} - change user options">${esc(initials())}</button>
       </div></header>`;
   }
 
@@ -876,9 +878,10 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     render();
   }
 
-  function openOptions() {
+  function openOptions(tab) {
     if (state.view !== "options") state.returnView = state.view;
     state.view = "options";
+    if (OPT_TABS.includes(tab)) state.optTab = tab;
     state.savedMsg = "";
     render();
   }
