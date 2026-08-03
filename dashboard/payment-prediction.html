@@ -858,7 +858,7 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
         ${field("organization", "Legal entity name", "The long name shown next to the ID")}
         ${field("userName", "User name", "Shown on hover over your avatar")}
         ${field("userInitials", "Initials", "Leave blank to derive them from the user name")}
-        ${field("userEmail", "Email", "Display only")}
+        ${field("userEmail", "Email", "Shown with the user name on hover over your avatar")}
       </div>
       <div class="optnote">This page sets the demo persona shown in the interface. It does not
         collect or store a password &mdash; there is nothing to sign in to. The dashboard runs
@@ -1008,12 +1008,20 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
         settings[k] = k === "redDotThreshold"
           ? (parseInt(e.target.value, 10) || 0)
           : e.target.value;
-        // Live-update the header chip without stealing focus from the field.
+        // Live-update the header without stealing focus from the field, so every
+        // account value visibly does something the moment it is typed.
+        const who = [settings.userName, settings.userEmail].filter(Boolean).join(" - ");
         const chip = document.querySelector(".lechip");
-        if (chip) chip.textContent = [settings.legalEntity, settings.organization]
-          .filter(Boolean).join(" | ");
+        if (chip) {
+          chip.textContent = [settings.legalEntity, settings.organization]
+            .filter(Boolean).join(" | ");
+          chip.title = "Change legal entity - " + who;
+        }
         const av = document.querySelector(".avatar");
-        if (av) av.textContent = initials();
+        if (av) {
+          av.textContent = initials();
+          av.title = who + " - change user options";
+        }
       });
     });
 
