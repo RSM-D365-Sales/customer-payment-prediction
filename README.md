@@ -6,9 +6,20 @@ to show — which is what the RSMUS demo environment currently does:
 
 > *"We are working on gathering data for this prediction. Check back later."*
 
-Currently seeded for **South Bend International Airport** (St. Joseph County
-Airport Authority) — airline landing fees, terminal rent, FBO and hangar leases,
-rental-car concessions, parking, cargo and AIP grant billing.
+Currently seeded for **benefit fund administration** — multiemployer
+(Taft-Hartley) health & welfare funds and benefit trusts, the employers that
+remit contributions to them, and public sector benefit plans. Billing covers
+PEPM administration fees, claims processing, eligibility and COBRA
+administration, employer contribution remittance, payroll compliance audit
+recovery and Form 5500 / GASB 75 support.
+
+A second pack, **South Bend International Airport**, ships alongside it —
+airline landing fees, terminal rent, FBO and hangar leases, rental-car
+concessions, parking, cargo and AIP grant billing:
+
+```bash
+python scripts/build_demo.py --seed airport --force-seed
+```
 
 Retargeting it at a different prospect is one spreadsheet edit and one command.
 
@@ -128,10 +139,18 @@ for everyone, edit the `Config` sheet and re-run the build.
 
 Good accounts to steer toward during a demo:
 
-- **CON-3005 Bendix Newsstand & Gifts** — 3% on time, an open collection case,
-  and receivables past 180 days.
-- **MRO-4101 Hoosier Aviation Maintenance** — largest at-risk balance.
-- **AIR-1002 Delta Air Lines** — 90% on time, for contrast.
+- **C00027 Keystone Infrastructure Partners** — 2% on time, largest at-risk
+  balance in the book, an open collection case, and contributions past 180 days.
+- **C00028 Harbor Industrial Services** — 2% on time on Net 15 terms, five open
+  documents, every one of them late.
+- **C00023 Northeast Food Distribution** — the delinquency story in miniature:
+  a contribution remittance, a liquidated-damages interest note, and a payroll
+  audit recovery all aging together.
+- **C00011 Northeast Carpenters Welfare Fund** — 85% on time, for contrast.
+
+The narrative that lands in this industry: every fund and public plan pays
+reliably, and all the collections exposure sits on contributing employers.
+That is exactly where it sits in a real fund-administration ledger.
 
 ---
 
@@ -203,13 +222,21 @@ Consequences that make it defensible in the room:
 ## A note on the data
 
 Every balance, date, probability and payment behaviour in this kit is
-**synthetic**. Real airline, rental-car and concession brand names are used
-because recognising their own tenant list is what makes the demo land — but the
-accounts carrying genuinely poor payment behaviour are all fictional entities
-(`Bendix Newsstand & Gifts`, `Hoosier Aviation Maintenance`, `Silver Hawk
-Aviation`, `Great Lakes Ground Support`, and similar). No real organisation is
-portrayed as delinquent. **Keep that convention if you edit the customer list**
-— it costs nothing and removes the only real risk in showing this to a client.
+**synthetic**. No real organisation is portrayed as delinquent, and that is
+deliberate — **keep the convention if you edit the customer list.** It costs
+nothing and removes the only real risk in showing this to a client.
+
+In the benefit funds pack every entity is fictional. The public sector plans
+reference real jurisdictions, so they are held at reliable-payer risk scores;
+all the delinquency sits on invented commercial employers (`Keystone
+Infrastructure Partners`, `Harbor Industrial Services`, `Atlantic Construction
+Services`, `Northeast Food Distribution`).
+
+In the airport pack, real airline, rental-car and concession brand names are
+used because recognising their own tenant list is what makes the demo land —
+but the poor payers there are fictional too (`Bendix Newsstand & Gifts`,
+`Hoosier Aviation Maintenance`, `Silver Hawk Aviation`, `Great Lakes Ground
+Support`, and similar).
 
 The disclosure lives on the **User options > Preferences** page rather than as a
 banner across the dashboard, so it stays out of the way during a demo while

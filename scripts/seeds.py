@@ -99,6 +99,38 @@ BILLING_LINES = {
         ("Hangar rent - team aircraft", "Customer", 5_100, 17_300),
         ("Aviation program facility lease", "Customer", 1_900, 7_400),
     ],
+
+    # --- Benefit fund administration ---------------------------------------
+    "Taft-Hartley Health & Welfare": [
+        ("Administration fee - per participant per month", "Customer", 48_000, 182_000),
+        ("Claims processing & adjudication services", "Customer", 22_000, 86_000),
+        ("Eligibility & enrollment administration", "Customer", 9_400, 34_000),
+        ("COBRA administration & premium billing", "Customer", 3_200, 12_800),
+    ],
+    "Taft-Hartley Benefit Trust": [
+        ("Fund administration fee - per participant per month", "Customer", 36_000, 145_000),
+        ("Pension benefit calculation & processing", "Customer", 14_000, 52_000),
+        ("Trustee meeting & fund accounting support", "Customer", 6_800, 24_500),
+        ("Form 5500 preparation & audit support", "Project", 18_000, 72_000),
+    ],
+    "Contributing Employer": [
+        ("Employer contribution remittance - monthly", "Customer", 28_000, 164_000),
+        ("Delinquency assessment & liquidated damages", "Interest note", 1_400, 9_600),
+        ("Payroll compliance audit recovery", "Project", 12_000, 68_000),
+        ("ACA reporting & Form 1095-C services", "Customer", 2_600, 9_800),
+    ],
+    "Contributing Employer - Construction": [
+        ("Employer contribution remittance - certified payroll", "Customer", 34_000, 196_000),
+        ("Payroll compliance audit recovery", "Project", 18_000, 94_000),
+        ("Delinquency assessment & liquidated damages", "Interest note", 2_200, 14_500),
+        ("Wage & fringe reconciliation services", "Customer", 4_800, 17_200),
+    ],
+    "Public Sector Benefit Plan": [
+        ("Plan administration fee - per employee per month", "Customer", 42_000, 158_000),
+        ("Retiree & OPEB benefit administration", "Customer", 16_500, 62_000),
+        ("Open enrollment services & member communications", "Customer", 7_200, 28_400),
+        ("Actuarial valuation & GASB 75 reporting support", "Project", 24_000, 96_000),
+    ],
 }
 
 
@@ -297,6 +329,179 @@ AIRPORT_SBN = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Benefit fund administration -- multiemployer (Taft-Hartley) welfare funds and
+# benefit trusts, the employers that remit contributions to them, and public
+# sector benefit plans.
+# ---------------------------------------------------------------------------
+# NOTE ON NAMES: every entity in this pack is fictional. The delinquency in the
+# book sits on the contributing-employer accounts, which is where it sits in a
+# real fund-administration AR ledger -- contribution delinquency is the whole
+# collections story in this industry. Public sector plans reference real
+# jurisdictions, so they are deliberately kept as reliable payers. Keep that
+# convention if you edit the list.
+
+BENEFIT_FUNDS = {
+    "config": {
+        "Demo name": "Benefit Fund Administration",
+        "Legal entity": "USMF",
+        "Organization": "Benefit Fund Administration Services",
+        "User name": "Demo User",
+        "User initials": "",
+        "User email": "demo.user@contoso.com",
+        "Currency": "USD",
+        "As of date": "2026-08-03",
+        "Aging period definition": "30_60_90_180",
+        "Red dot threshold (%)": 60,
+        "Theme": "red",
+        "Size": "comfortable",
+        "Random seed": 20260803,
+    },
+    "customers": [
+        # --- Taft-Hartley health & welfare funds ----------------------------
+        dict(account="C00011", name="Northeast Carpenters Welfare Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.91, aging="current", opens=3,
+             city="New York, NY",
+             address="395 Hudson Street, 9th Floor\nNew York, NY 10014\nUSA"),
+        dict(account="C00014", name="Tri-State Sheet Metal Workers Health Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.86, aging="mild", opens=3,
+             city="Newark, NJ",
+             address="1180 Raymond Boulevard, Suite 400\nNewark, NJ 07102\nUSA"),
+        dict(account="C00015", name="Metropolitan Transit Employees Health Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.89, aging="current", opens=3,
+             city="Brooklyn, NY",
+             address="175 Remsen Street, 6th Floor\nBrooklyn, NY 11201\nUSA"),
+        dict(account="C00016", name="Hudson Valley Laborers Welfare Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.83, aging="mild", opens=3,
+             city="Poughkeepsie, NY",
+             address="2 Washington Street, Suite 210\nPoughkeepsie, NY 12601\nUSA"),
+        dict(account="C00018", name="Greater New York Teamsters Health Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.87, aging="mild", opens=4,
+             city="Long Island City, NY",
+             address="27-08 42nd Road\nLong Island City, NY 11101\nUSA"),
+        dict(account="C00020", name="Empire Plumbers & Pipefitters Health Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.80, aging="mild", opens=3,
+             city="Albany, NY",
+             address="890 Third Street, Suite 120\nAlbany, NY 12206\nUSA"),
+        dict(account="US-105", name="New York Construction Workers Health Fund",
+             group="Taft-Hartley Health & Welfare",
+             terms="Net 30", risk=0.78, aging="mild", opens=4,
+             city="New York, NY",
+             address="266 West 37th Street, 14th Floor\nNew York, NY 10018\nUSA"),
+
+        # --- Taft-Hartley benefit trusts ------------------------------------
+        dict(account="C00012", name="Empire State Teachers Benefit Trust",
+             group="Taft-Hartley Benefit Trust",
+             terms="Net 45", risk=0.90, aging="current", opens=3,
+             city="Albany, NY",
+             address="20 Corporate Woods Boulevard\nAlbany, NY 12211\nUSA"),
+        dict(account="C00013", name="Empire State Electrical Workers Benefit Trust",
+             group="Taft-Hartley Benefit Trust",
+             terms="Net 30", risk=0.85, aging="current", opens=3,
+             city="Flushing, NY",
+             address="158-11 Harry Van Arsdale Jr. Avenue\nFlushing, NY 11365\nUSA"),
+        dict(account="C00017", name="Long Island Operating Engineers Benefit Fund",
+             group="Taft-Hartley Benefit Trust",
+             terms="Net 30", risk=0.76, aging="moderate", opens=3,
+             city="Hauppauge, NY",
+             address="600 Motor Parkway, Suite 305\nHauppauge, NY 11788\nUSA"),
+        dict(account="C00019", name="Atlantic Ironworkers Welfare Trust",
+             group="Taft-Hartley Benefit Trust",
+             terms="Net 30", risk=0.71, aging="moderate", opens=3,
+             city="Jersey City, NJ",
+             address="101 Hudson Street, Suite 2100\nJersey City, NJ 07302\nUSA"),
+
+        # --- Contributing employers -----------------------------------------
+        dict(account="C00021", name="Hudson Manufacturing Group",
+             group="Contributing Employer",
+             terms="Net 30", risk=0.68, aging="moderate", opens=3,
+             city="Yonkers, NY",
+             address="1 Alexander Street, Building C\nYonkers, NY 10701\nUSA"),
+        dict(account="C00022", name="Empire Logistics Holdings",
+             group="Contributing Employer",
+             terms="Net 30", risk=0.52, aging="moderate", opens=4,
+             city="Elizabeth, NJ",
+             address="1000 Corbin Street\nElizabeth, NJ 07201\nUSA"),
+        dict(account="C00023", name="Northeast Food Distribution Inc.",
+             group="Contributing Employer",
+             terms="Net 30", risk=0.44, aging="severe", opens=4,
+             city="Bronx, NY",
+             address="355 Food Center Drive, Unit 12\nBronx, NY 10474\nUSA"),
+        dict(account="C00026", name="Metro Property Management Group",
+             group="Contributing Employer",
+             terms="Net 30", risk=0.57, aging="moderate", opens=3,
+             city="New York, NY",
+             address="230 West 41st Street, Suite 1500\nNew York, NY 10036\nUSA"),
+        dict(account="C00028", name="Harbor Industrial Services",
+             group="Contributing Employer",
+             terms="Net 15", risk=0.26, aging="severe", opens=5,
+             city="Bayonne, NJ",
+             address="140 East 22nd Street, Terminal 3\nBayonne, NJ 07002\nUSA"),
+        dict(account="C00029", name="Pioneer Energy Solutions",
+             group="Contributing Employer",
+             terms="Net 30", risk=0.42, aging="moderate", opens=4,
+             city="Stamford, CT",
+             address="750 Washington Boulevard, Suite 800\nStamford, CT 06901\nUSA"),
+        dict(account="C00030", name="Northeast Healthcare Services Group",
+             group="Contributing Employer",
+             terms="Net 30", risk=0.66, aging="mild", opens=3,
+             city="White Plains, NY",
+             address="445 Hamilton Avenue, Suite 1102\nWhite Plains, NY 10601\nUSA"),
+
+        # --- Contributing employers (construction) ---------------------------
+        dict(account="C00024", name="Atlantic Construction Services LLC",
+             group="Contributing Employer - Construction",
+             terms="Net 15", risk=0.31, aging="severe", opens=5,
+             city="Brooklyn, NY",
+             address="63 Flushing Avenue, Building 280\nBrooklyn, NY 11205\nUSA"),
+        dict(account="C00025", name="Liberty Building Products Corporation",
+             group="Contributing Employer - Construction",
+             terms="Net 30", risk=0.49, aging="moderate", opens=3,
+             city="Paterson, NJ",
+             address="1 Cianci Street, Suite 40\nPaterson, NJ 07505\nUSA"),
+        dict(account="C00027", name="Keystone Infrastructure Partners",
+             group="Contributing Employer - Construction",
+             terms="Net 30", risk=0.19, aging="severe", opens=5,
+             city="Newark, NJ",
+             address="744 Broad Street, Suite 1900\nNewark, NJ 07102\nUSA"),
+
+        # --- Public sector benefit plans -------------------------------------
+        dict(account="C00031", name="City of Albany Employee Benefits Trust",
+             group="Public Sector Benefit Plan",
+             terms="Net 45", risk=0.88, aging="mild", opens=3,
+             city="Albany, NY",
+             address="24 Eagle Street, Room 102\nAlbany, NY 12207\nUSA"),
+        dict(account="C00032", name="Suffolk County Employee Health Plan",
+             group="Public Sector Benefit Plan",
+             terms="Net 45", risk=0.85, aging="current", opens=3,
+             city="Hauppauge, NY",
+             address="100 Veterans Memorial Highway\nHauppauge, NY 11788\nUSA"),
+        dict(account="C00033", name="New Jersey Municipal Benefits Consortium",
+             group="Public Sector Benefit Plan",
+             terms="Net 45", risk=0.82, aging="mild", opens=3,
+             city="Trenton, NJ",
+             address="222 West State Street, Suite 300\nTrenton, NJ 08608\nUSA"),
+        dict(account="C00034", name="Massachusetts Public Employees Health Trust",
+             group="Public Sector Benefit Plan",
+             terms="Net 60", risk=0.86, aging="mild", opens=3,
+             city="Boston, MA",
+             address="19 Staniford Street, 4th Floor\nBoston, MA 02114\nUSA"),
+        dict(account="C00035", name="Metropolitan School District Benefits Program",
+             group="Public Sector Benefit Plan",
+             terms="Net 45", risk=0.79, aging="mild", opens=3,
+             city="Syracuse, NY",
+             address="725 Harrison Street, Suite 200\nSyracuse, NY 13210\nUSA"),
+    ],
+}
+
+
 SEED_PACKS = {
     "airport": AIRPORT_SBN,
+    "benefitfunds": BENEFIT_FUNDS,
 }

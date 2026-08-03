@@ -182,6 +182,9 @@ def generate(customers: list[dict], config: dict):
         for i in range(opens):
             desc, ttype, lo, hi = lines[i % len(lines)]
             dpd = pool[i % len(pool)] + rng.randint(-3, 3)
+            # A not-yet-due item can only sit as far out as its own terms allow;
+            # any further and the invoice would be dated in the future.
+            dpd = max(dpd, -terms_days)
             due = as_of - timedelta(days=dpd)
             inv_date = due - timedelta(days=terms_days)
             amount = round(rng.uniform(lo, hi), 2)
