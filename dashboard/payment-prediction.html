@@ -995,10 +995,14 @@ html[data-contrast="high"] .msgbar{background:#FFF;border-color:#000}
     }));
 
     // D365 applies a theme the moment you pick it, before you save.
-    document.querySelectorAll("[data-theme]").forEach(b => b.addEventListener("click", () => {
+    // Qualify these with `button` -- applyAppearance() puts data-size (and
+    // data-contrast) on <html>, so a bare [data-size] selector also matches the
+    // root element and hangs a render() on every click anywhere in the app,
+    // which wipes the DOM out from under whatever field has focus.
+    document.querySelectorAll("button[data-theme]").forEach(b => b.addEventListener("click", () => {
       settings.theme = b.dataset.theme; state.savedMsg = ""; render();
     }));
-    document.querySelectorAll("[data-size]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("button[data-size]").forEach(b => b.addEventListener("click", () => {
       settings.size = b.dataset.size; state.savedMsg = ""; render();
     }));
 
